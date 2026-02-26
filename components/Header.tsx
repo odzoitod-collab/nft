@@ -22,14 +22,7 @@ const Header: React.FC<HeaderProps> = ({
     >
       <div className="flex items-center gap-2.5">
         {!title ? (
-          <>
-            <img
-              src="/images/logo.png"
-              alt="Ethos Gallery"
-              className="w-8 h-8 rounded-lg object-cover border border-white/5"
-            />
-            <span className="font-semibold text-base text-white tracking-tight">Ethos</span>
-          </>
+          <span className="font-semibold text-base text-white tracking-tight">Ethos</span>
         ) : (
           <span className="font-semibold text-lg text-white tracking-tight">{title}</span>
         )}
