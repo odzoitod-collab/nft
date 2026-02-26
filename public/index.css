@@ -1,0 +1,129 @@
+/* Ethos Gallery — Web3 minimal design system */
+:root {
+  --bg: #0a0a0b;
+  --bg-elevated: #111113;
+  --bg-card: #141416;
+  --border: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.1);
+  --text: #ffffff;
+  --text-secondary: #8e8e93;
+  --accent: #0091ff;
+  --accent-muted: rgba(0, 145, 255, 0.12);
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --duration-sheet: 0.4s;
+  --duration-backdrop: 0.3s;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--bg);
+  color: var(--text);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ========== Backdrop — плавное появление ========== */
+.sheet-backdrop {
+  animation: backdropEnter var(--duration-backdrop) var(--ease-out-smooth) forwards;
+}
+@keyframes backdropEnter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ========== Bottom sheet — выезд снизу, мягко ========== */
+.sheet-panel {
+  animation: sheetSlideUp var(--duration-sheet) var(--ease-out-expo) forwards;
+  transform-origin: bottom center;
+}
+@keyframes sheetSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========== Full-screen sheet / экран — мягкое появление ========== */
+.sheet-panel-full {
+  animation: sheetFullEnter 0.35s var(--ease-out-expo) forwards;
+}
+@keyframes sheetFullEnter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ========== Страница / контент — лёгкий fade ========== */
+.animate-fade-in {
+  animation: fadeIn 0.25s var(--ease-out-smooth) forwards;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Старый slide-up оставляем для совместимости */
+.slide-up {
+  animation: slideUp 0.35s var(--ease-out-expo) forwards;
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========== Карточки / списки — лёгкая задержка по очереди (опционально) ========== */
+.animate-in-stagger > * {
+  animation: fadeInUp 0.4s var(--ease-out-expo) forwards;
+}
+.animate-in-stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.animate-in-stagger > *:nth-child(2) { animation-delay: 0.04s; }
+.animate-in-stagger > *:nth-child(3) { animation-delay: 0.06s; }
+.animate-in-stagger > *:nth-child(4) { animation-delay: 0.08s; }
+.animate-in-stagger > *:nth-child(5) { animation-delay: 0.1s; }
+.animate-in-stagger > *:nth-child(n+6) { animation-delay: 0.12s; }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========== Кнопки — мягкий scale при нажатии ========== */
+.btn-touch:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
