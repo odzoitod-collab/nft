@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Trophy, Zap, ArrowRight, Clock, Gem } from 'lucide-react';
+import { Sparkles, Trophy, Zap, ArrowRight, Gem } from 'lucide-react';
 import Header from './Header';
 import SeasonCompetitionSheet from './SeasonCompetitionSheet';
 import { NFT } from '../types';
@@ -121,10 +121,6 @@ const SeasonView: React.FC<SeasonViewProps> = ({
               )}
             </button>
 
-            <div className="flex items-center justify-center gap-2 text-tg-hint text-xs">
-              <Clock className="w-3.5 h-3.5" />
-              <span>Осталось 12 дней</span>
-            </div>
           </div>
         </div>
       </div>

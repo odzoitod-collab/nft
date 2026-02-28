@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import BottomNav from './components/BottomNav';
 import StoreView from './components/StoreView';
 import ProfileView from './components/ProfileView';
-import GiftsView from './components/GiftsView';
+import PortfolioView from './components/PortfolioView';
 import SeasonView from './components/SeasonView';
 import WalletSheet from './components/WalletSheet';
 import SettingsSheet from './components/SettingsSheet';
@@ -537,7 +537,7 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
           }
 
           setSuccessOverlay({ show: true, message: 'Покупка оформлена' });
-          setView(ViewState.GIFTS);
+          setView(ViewState.PORTFOLIO);
           setSelectedNft(null);
       } catch (error) {
           console.error('Error in handleBuy:', error);
@@ -609,7 +609,7 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
           });
         });
         setSuccessOverlay({ show: true, message: quantity === 2 ? 'Пара NFT продана' : 'NFT продан' });
-        setView(ViewState.GIFTS);
+        setView(ViewState.PORTFOLIO);
       } catch (error) {
         console.error('Error instant sell:', error);
         alert('❌ Ошибка при продаже. Попробуйте снова.');
@@ -662,7 +662,7 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
           `• Обновление в реальном времени на сайте`
         );
         console.log(`📝 Created listing: ${nft.title} for ${price} TON`);
-        setView(ViewState.GIFTS);
+        setView(ViewState.PORTFOLIO);
       } else {
         alert('❌ Ошибка при создании листинга. Попробуйте снова.');
       }
@@ -672,8 +672,9 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
     }
   };
 
-  // Filter owned NFTs for Gifts View
-  const myGifts = nfts.filter(n => n.owner === user.address);
+  // NFT пользователя для раздела «Портфель»
+  const myPortfolioNfts = nfts.filter((n) => n.owner === user.address);
+  const soldTransactions = history.filter((t) => t.type === 'sell');
 
   // Filter NFTs for Store View - exclude owned NFTs
   const storeNfts = nfts.filter(n => n.owner !== user.address);
@@ -690,14 +691,16 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
             marketListSeed={marketListSeed}
           />
         );
-      case ViewState.GIFTS:
+      case ViewState.PORTFOLIO:
         return (
-           <GiftsView 
-             nfts={myGifts} 
-             onNftClick={handleNftClick} 
-             userBalance={user.balance}
-             onOpenWallet={() => setIsWalletSheetOpen(true)}
-           />
+          <PortfolioView
+            nfts={myPortfolioNfts}
+            soldTransactions={soldTransactions}
+            catalog={nftCatalog}
+            onNftClick={handleNftClick}
+            userBalance={user.balance}
+            onOpenWallet={() => setIsWalletSheetOpen(true)}
+          />
         );
       case ViewState.SEASON:
         return (

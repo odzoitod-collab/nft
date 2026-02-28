@@ -190,7 +190,6 @@ const SeasonCompetitionSheet: React.FC<SeasonCompetitionSheetProps> = ({
             </button>
           )}
 
-          <p className="text-center text-tg-hint text-xs">Сезон завершается через 12 дней</p>
         </div>
       </div>
     </div>

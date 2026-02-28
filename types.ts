@@ -27,7 +27,7 @@ export interface NFT {
 
 export enum ViewState {
   STORE = 'STORE',
-  GIFTS = 'GIFTS',
+  PORTFOLIO = 'PORTFOLIO',
   SEASON = 'SEASON',
   PROFILE = 'PROFILE',
   NFT_DETAIL = 'NFT_DETAIL',

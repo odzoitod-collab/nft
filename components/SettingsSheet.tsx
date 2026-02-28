@@ -104,7 +104,7 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ isOpen, onClose }) => {
                     <div className="bg-tg-card rounded-2xl overflow-hidden border border-white/5 p-1">
                         <ToggleItem label="Новые ставки" description="Уведомления о перебитых ставках" />
                         <ToggleItem label="Продажа предмета" description="Когда ваш NFT куплен" />
-                        <ToggleItem label="Подарки" description="Получение новых предметов" />
+                        <ToggleItem label="Портфель" description="Покупки и проданные NFT" />
                     </div>
                      <div className="bg-tg-card rounded-2xl overflow-hidden border border-white/5 p-1">
                         <ToggleItem label="Новости Маркета" description="Анонсы новых сезонов" defaultChecked={false} />

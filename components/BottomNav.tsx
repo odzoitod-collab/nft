@@ -1,5 +1,5 @@
 import React from 'react';
-import { Store, Gift, Sparkles, User as UserIcon } from 'lucide-react';
+import { Store, Briefcase, Sparkles, User as UserIcon } from 'lucide-react';
 import { ViewState } from '../types';
 
 interface BottomNavProps {
@@ -10,7 +10,7 @@ interface BottomNavProps {
 const BottomNav: React.FC<BottomNavProps> = ({ currentView, setView }) => {
   const items = [
     { id: ViewState.STORE, label: 'Маркет', icon: Store },
-    { id: ViewState.GIFTS, label: 'Подарки', icon: Gift },
+    { id: ViewState.PORTFOLIO, label: 'Портфель', icon: Briefcase },
     { id: ViewState.SEASON, label: 'Сезон', icon: Sparkles },
     { id: ViewState.PROFILE, label: 'Профиль', icon: UserIcon },
   ];
