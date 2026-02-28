@@ -1,24 +1,29 @@
 import React from 'react';
 import { X, Trophy, TrendingUp, Users, Zap, Award, Crown, Gem } from 'lucide-react';
-
-const MIN_BALANCE = 10_000;
+import { NFT } from '../types';
 
 interface SeasonCompetitionSheetProps {
   isOpen: boolean;
   onClose: () => void;
   userBalance: number;
-  minBalanceRequired: number;
+  userTotalVolume: number;
+  minVolumeRequired: number;
   onOpenWallet: () => void;
+  onPrizeClick?: (nft: NFT) => void;
+  prizeNft?: NFT;
 }
 
 const SeasonCompetitionSheet: React.FC<SeasonCompetitionSheetProps> = ({
   isOpen,
   onClose,
   userBalance,
-  minBalanceRequired,
+  userTotalVolume,
+  minVolumeRequired,
   onOpenWallet,
+  onPrizeClick,
+  prizeNft,
 }) => {
-  const canJoin = userBalance >= minBalanceRequired;
+  const canJoin = userTotalVolume >= minVolumeRequired;
 
   if (!isOpen) return null;
 
@@ -45,13 +50,13 @@ const SeasonCompetitionSheet: React.FC<SeasonCompetitionSheetProps> = ({
               Требование для участия
             </h3>
             <div className="flex items-center justify-between py-2">
-              <span className="text-tg-hint text-sm">Минимальный баланс</span>
-              <span className="text-white font-semibold">{minBalanceRequired.toLocaleString()} TON</span>
+              <span className="text-tg-hint text-sm">Объём торгов</span>
+              <span className="text-white font-semibold">от {minVolumeRequired.toLocaleString()} TON</span>
             </div>
             <div className="flex items-center justify-between py-2 border-t border-white/5">
-              <span className="text-tg-hint text-sm">Ваш баланс</span>
+              <span className="text-tg-hint text-sm">Ваш объём торгов</span>
               <span className={canJoin ? 'text-green-400 font-semibold' : 'text-white font-semibold'}>
-                {userBalance.toLocaleString()} TON
+                {userTotalVolume.toLocaleString()} TON
               </span>
             </div>
             {!canJoin && (
@@ -71,13 +76,19 @@ const SeasonCompetitionSheet: React.FC<SeasonCompetitionSheetProps> = ({
               Призы
             </h3>
             <ul className="space-y-3 text-sm">
-              <li className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
+              <li
+                role={onPrizeClick && prizeNft ? 'button' : undefined}
+                tabIndex={onPrizeClick && prizeNft ? 0 : undefined}
+                onClick={onPrizeClick && prizeNft ? () => { onClose(); onPrizeClick(prizeNft); } : undefined}
+                onKeyDown={onPrizeClick && prizeNft ? (e) => e.key === 'Enter' && (onClose(), onPrizeClick(prizeNft)) : undefined}
+                className={`flex items-center gap-3 py-2 border-b border-white/5 last:border-0 ${onPrizeClick && prizeNft ? 'cursor-pointer hover:bg-white/5 rounded-lg -mx-1 px-1' : ''}`}
+              >
                 <div className="w-8 h-8 rounded-lg bg-tg-button/20 flex items-center justify-center flex-shrink-0">
                   <Crown className="w-4 h-4 text-tg-button" />
                 </div>
                 <div>
                   <span className="font-medium text-white">1 место</span>
-                  <span className="text-tg-hint block text-xs">Legendary NFT + 10 000 TON</span>
+                  <span className="text-tg-hint block text-xs">Legendary NFT + 10 000 TON. Нажмите, чтобы посмотреть.</span>
                 </div>
               </li>
               <li className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
@@ -118,7 +129,7 @@ const SeasonCompetitionSheet: React.FC<SeasonCompetitionSheetProps> = ({
             <ol className="space-y-3 text-sm text-tg-hint">
               <li className="flex gap-2">
                 <span className="text-white font-medium w-5">1.</span>
-                Баланс от 10 000 TON — необходимое условие для входа в конкурс.
+                Объём торгов от 5 000 TON — необходимое условие для входа в конкурс.
               </li>
               <li className="flex gap-2">
                 <span className="text-white font-medium w-5">2.</span>

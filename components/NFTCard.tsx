@@ -34,6 +34,8 @@ const NFTCard: React.FC<NFTCardProps> = ({ nft, onClick }) => {
           {nft.title}
         </h3>
         <p className="text-tg-hint text-xs mt-0.5 truncate">
+          {nft.catalogId != null ? `ID: ${nft.catalogId}` : null}
+          {nft.catalogId != null && nft.code ? ' · ' : ''}
           {nft.code ? `Код: ${nft.code}` : nft.subtitle || `#${nft.id}`}
         </p>
         <div className="mt-auto pt-3 flex items-center gap-2">

@@ -127,3 +127,84 @@ body {
   transform: scale(0.97);
   transition: transform 0.1s ease;
 }
+
+/* ========== SVG-анимации ========== */
+.svg-icon-pulse {
+  animation: svgIconPulse 2.5s var(--ease-out-smooth) infinite;
+}
+@keyframes svgIconPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.03); }
+}
+
+.svg-btn-press:active {
+  transform: scale(0.96);
+  transition: transform 0.1s ease;
+}
+
+/* Рисование обводки (stroke-dasharray) */
+.svg-stroke-dash {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: svgStrokeDraw 1.2s var(--ease-out-expo) 0.3s forwards;
+}
+.svg-draw-line {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  animation: svgStrokeDraw 0.6s var(--ease-out-expo) 0.8s forwards;
+}
+@keyframes svgStrokeDraw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Лёгкое мерцание для акцента (опционально) */
+.svg-shine {
+  animation: svgShine 3s ease-in-out infinite;
+}
+@keyframes svgShine {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ========== Preloader (полноэкранный оверлей) ========== */
+.preloader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: var(--bg, #0a0a0b);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  transition: opacity 0.5s ease, visibility 0.5s;
+}
+
+.preloader-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.preloader-text {
+  color: var(--text-secondary, #8e8e93);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  animation: preloader-text-pulse 2s linear infinite;
+}
+
+.preloader-is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@keyframes preloader-text-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}

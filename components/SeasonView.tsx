@@ -2,17 +2,40 @@ import React, { useState } from 'react';
 import { Sparkles, Trophy, Zap, ArrowRight, Clock, Gem } from 'lucide-react';
 import Header from './Header';
 import SeasonCompetitionSheet from './SeasonCompetitionSheet';
+import { NFT } from '../types';
 
-const MIN_BALANCE_TO_JOIN = 10_000;
+const MIN_VOLUME_TO_JOIN = 5_000;
+
+const PRIZE_IMAGE = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRW7NyQBldi3DqZ1ID_ByibBcEQixPvJcaBXA&s';
+
+const PRIZE_NFT: NFT = {
+  id: 'season-prize',
+  title: 'Legendary NFT — главный приз сезона',
+  description: 'Эксклюзивный NFT и 10 000 TON победителю сезонного конкурса. Объём торгов от 5 000 TON для участия.',
+  price: 57_000_000,
+  currency: 'TON',
+  image: PRIZE_IMAGE,
+  owner: 'season',
+  verified: true,
+  views: 0,
+  bids: 0,
+};
 
 interface SeasonViewProps {
   userBalance: number;
+  userTotalVolume: number;
   onOpenWallet: () => void;
+  onPrizeClick: (nft: NFT) => void;
 }
 
-const SeasonView: React.FC<SeasonViewProps> = ({ userBalance, onOpenWallet }) => {
+const SeasonView: React.FC<SeasonViewProps> = ({
+  userBalance,
+  userTotalVolume,
+  onOpenWallet,
+  onPrizeClick,
+}) => {
   const [isCompetitionOpen, setIsCompetitionOpen] = useState(false);
-  const canJoin = userBalance >= MIN_BALANCE_TO_JOIN;
+  const canJoin = userTotalVolume >= MIN_VOLUME_TO_JOIN;
 
   const handleParticipateClick = () => {
     if (canJoin) setIsCompetitionOpen(true);
@@ -52,23 +75,29 @@ const SeasonView: React.FC<SeasonViewProps> = ({ userBalance, onOpenWallet }) =>
               </div>
             </div>
 
-            <div className="rounded-xl bg-tg-bg border border-white/5 p-4 flex items-center gap-3">
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => onPrizeClick(PRIZE_NFT)}
+              onKeyDown={(e) => e.key === 'Enter' && onPrizeClick(PRIZE_NFT)}
+              className="rounded-xl bg-tg-bg border border-white/5 p-4 flex items-center gap-3 cursor-pointer hover:bg-white/5 active:scale-[0.99] transition-transform"
+            >
               <div className="w-14 h-14 rounded-xl overflow-hidden border border-white/5 flex-shrink-0 bg-tg-elevated">
-                <img src="/images/40.png" alt="Приз" className="w-full h-full object-cover" />
+                <img src={PRIZE_IMAGE} alt="Приз" className="w-full h-full object-cover" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-tg-hint text-xs font-medium uppercase tracking-wide">Главный приз</p>
                 <p className="text-white font-semibold">Legendary NFT + 10 000 TON</p>
-                <p className="text-tg-hint text-xs mt-0.5">Победитель получает эксклюзивный NFT и TON</p>
+                <p className="text-tg-hint text-xs mt-0.5">Объём торгов от 5 000 TON для участия. Нажмите, чтобы посмотреть.</p>
               </div>
             </div>
 
             {!canJoin && (
               <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-4">
                 <p className="text-amber-200 text-sm font-medium">
-                  Для участия нужен баланс от <span className="font-bold text-white">10 000 TON</span>.
+                  Для участия нужен объём торгов от <span className="font-bold text-white">5 000 TON</span>.
                 </p>
-                <p className="text-tg-hint text-xs mt-1">Пополните кошелёк, чтобы участвовать в сезоне.</p>
+                <p className="text-tg-hint text-xs mt-1">Торгуйте на маркете, чтобы участвовать в сезоне.</p>
               </div>
             )}
 
@@ -104,8 +133,11 @@ const SeasonView: React.FC<SeasonViewProps> = ({ userBalance, onOpenWallet }) =>
         isOpen={isCompetitionOpen}
         onClose={() => setIsCompetitionOpen(false)}
         userBalance={userBalance}
-        minBalanceRequired={MIN_BALANCE_TO_JOIN}
+        userTotalVolume={userTotalVolume}
+        minVolumeRequired={MIN_VOLUME_TO_JOIN}
         onOpenWallet={onOpenWallet}
+        onPrizeClick={onPrizeClick}
+        prizeNft={PRIZE_NFT}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Gift, ShoppingBag, Box } from 'lucide-react';
+import { ShoppingBag, Box } from 'lucide-react';
 import { NFT } from '../types';
 import NFTCard from './NFTCard';
 import Header from './Header';
@@ -11,7 +11,7 @@ interface GiftsViewProps {
   onOpenWallet: () => void;
 }
 
-type GiftFilter = 'all' | 'gift' | 'purchase';
+type GiftFilter = 'all' | 'purchase';
 
 const GiftsView: React.FC<GiftsViewProps> = ({ nfts, onNftClick, userBalance, onOpenWallet }) => {
   const [filter, setFilter] = useState<GiftFilter>('all');
@@ -28,7 +28,6 @@ const GiftsView: React.FC<GiftsViewProps> = ({ nfts, onNftClick, userBalance, on
       <div className="px-4 pt-4 pb-4">
         <div className="flex gap-1 p-0.5 rounded-lg bg-tg-card border border-white/5 w-full">
           <TabButton active={filter === 'all'} onClick={() => setFilter('all')} label="Все" />
-          <TabButton active={filter === 'gift'} onClick={() => setFilter('gift')} label="Подарки" />
           <TabButton active={filter === 'purchase'} onClick={() => setFilter('purchase')} label="Покупки" />
         </div>
       </div>
@@ -44,8 +43,6 @@ const GiftsView: React.FC<GiftsViewProps> = ({ nfts, onNftClick, userBalance, on
           <div className="w-14 h-14 rounded-xl bg-tg-card border border-white/5 flex items-center justify-center mb-4">
             {filter === 'purchase' ? (
               <ShoppingBag className="w-6 h-6 text-tg-hint" />
-            ) : filter === 'gift' ? (
-              <Gift className="w-6 h-6 text-tg-hint" />
             ) : (
               <Box className="w-6 h-6 text-tg-hint" />
             )}

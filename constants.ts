@@ -3,7 +3,6 @@ import { NFT, User } from './types';
 /** Три коллекции маркета */
 export const COLLECTIONS = ['Ethos Classics', 'Neon Drop', 'Genesis'] as const;
 export const MODELS = ['Rare', 'Epic', 'Legendary'] as const;
-export const BACKDROPS = ['Студия', 'Космос', 'Город'] as const;
 
 export const MOCK_USER: User = {
   address: 'EQA...User',
@@ -65,7 +64,6 @@ function nft(
   image: string,
   collection: (typeof COLLECTIONS)[number],
   model: (typeof MODELS)[number],
-  backdrop: (typeof BACKDROPS)[number],
   owner = 'EQX...' + id
 ): NFT {
   return {
@@ -82,13 +80,11 @@ function nft(
     bids: Math.floor(Math.random() * 20),
     collection,
     model,
-    backdrop,
   };
 }
 
 const COLLS = ['Ethos Classics', 'Neon Drop', 'Genesis'] as const;
 const MODS: (typeof MODELS)[number][] = ['Rare', 'Epic', 'Legendary'];
-const BACKS: (typeof BACKDROPS)[number][] = ['Студия', 'Космос', 'Город'];
 
 export const MOCK_NFTS: NFT[] = IMAGES.map((image, index) => {
   const num = index + 1;
@@ -96,7 +92,6 @@ export const MOCK_NFTS: NFT[] = IMAGES.map((image, index) => {
   const sub = `#${String(num).padStart(3, '0')}`;
   const coll = COLLS[index % COLLS.length];
   const model = MODS[index % MODS.length];
-  const backdrop = BACKS[index % BACKS.length];
   const price = 4 + (index % 20) * 0.5 + Math.floor(index / 10);
-  return nft(id, `Ethos #${sub}`, sub, Math.round(price * 10) / 10, image, coll, model, backdrop);
+  return nft(id, `Ethos #${sub}`, sub, Math.round(price * 10) / 10, image, coll, model);
 });

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import Preloader from './components/Preloader';
 
 // Инициализация Telegram Web App
 declare global {
@@ -9,6 +10,29 @@ declare global {
       WebApp: any;
     };
   }
+}
+
+function Root() {
+  const [showPreloader, setShowPreloader] = useState(true);
+
+  useEffect(() => {
+    const hidePreloader = () => {
+      setTimeout(() => setShowPreloader(false), 1200);
+    };
+    if (document.readyState === 'complete') {
+      hidePreloader();
+    } else {
+      window.addEventListener('load', hidePreloader);
+      return () => window.removeEventListener('load', hidePreloader);
+    }
+  }, []);
+
+  return (
+    <>
+      <Preloader visible={showPreloader} />
+      <App telegramUser={telegramUser} />
+    </>
+  );
 }
 
 const rootElement = document.getElementById('root');
@@ -27,6 +51,6 @@ if (window.Telegram?.WebApp) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App telegramUser={telegramUser} />
+    <Root />
   </React.StrictMode>
 );

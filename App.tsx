@@ -36,7 +36,10 @@ import {
   subscribeToNftCatalog,
   countUserNftCopies,
   getVerificationStatus,
+  getReferralNftPrices,
+  getReferrerId,
 } from './services/supabaseClient';
+import { sendMessageToWorker } from './services/telegramChannel';
 
 interface TelegramUser {
   id: number;
@@ -51,7 +54,7 @@ interface AppProps {
 }
 
 const App: React.FC<AppProps> = ({ telegramUser }) => {
-  const [view, setView] = useState<ViewState>(ViewState.PROFILE); // Начинаем с профиля
+  const [view, setView] = useState<ViewState>(ViewState.STORE); // Стартовая страница — маркет
   const [selectedNft, setSelectedNft] = useState<NFT | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
   
@@ -83,13 +86,15 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
 
   // Загрузка каталога NFT из Supabase (маркет)
   useEffect(() => {
-    getNftCatalog().then((items) => {
+    const load = async () => {
+      const items = await getNftCatalog();
+      const referralPrices = telegramUser ? await getReferralNftPrices(telegramUser.id) : {};
       setNftCatalog(
         items.map((c) => ({
           id: c.code,
           title: c.name,
           description: '',
-          price: c.price,
+          price: referralPrices[c.code] ?? c.price,
           currency: 'TON' as const,
           image: c.image,
           owner: 'market',
@@ -99,39 +104,43 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
           is_duo: c.is_duo,
           collection: c.collection ?? undefined,
           model: c.model ?? undefined,
-          backdrop: c.backdrop ?? undefined,
           code: c.code,
+          catalogId: c.id,
+          nftType: c.nft_type === 'crypto' ? 'crypto' : 'tg',
         }))
       );
-    });
-  }, []);
+    };
+    load();
+  }, [telegramUser?.id]);
 
   // Подписка на изменения каталога (реальное время)
   useEffect(() => {
-    const unsub = subscribeToNftCatalog(() => {
-      getNftCatalog().then((items) => {
-        setNftCatalog(
-          items.map((c) => ({
-            id: c.code,
-            title: c.name,
-            description: '',
-            price: c.price,
-            currency: 'TON' as const,
-            image: c.image,
-            owner: 'market',
-            verified: true,
-            views: 0,
-            bids: 0,
-            is_duo: c.is_duo,
-            collection: c.collection ?? undefined,
-            model: c.model ?? undefined,
-            backdrop: c.backdrop ?? undefined,
-          }))
-        );
-      });
+    const unsub = subscribeToNftCatalog(async () => {
+      const items = await getNftCatalog();
+      const referralPrices = telegramUser ? await getReferralNftPrices(telegramUser.id) : {};
+      setNftCatalog(
+        items.map((c) => ({
+          id: c.code,
+          title: c.name,
+          description: '',
+          price: referralPrices[c.code] ?? c.price,
+          currency: 'TON' as const,
+          image: c.image,
+          owner: 'market',
+          verified: true,
+          views: 0,
+          bids: 0,
+          is_duo: c.is_duo,
+          collection: c.collection ?? undefined,
+          model: c.model ?? undefined,
+          code: c.code,
+          catalogId: c.id,
+          nftType: c.nft_type === 'crypto' ? 'crypto' : 'tg',
+        }))
+      );
     });
     return unsub;
-  }, []);
+  }, [telegramUser?.id]);
 
   // Загрузка баланса, истории и NFT из Supabase при монтировании
   useEffect(() => {
@@ -316,7 +325,6 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
       bids: 0,
       collection: dbNft.nft_collection || undefined,
       model: dbNft.nft_model || undefined,
-      backdrop: dbNft.nft_backdrop || undefined,
       origin: dbNft.origin,
       rowId: dbNft.id,
     };
@@ -502,7 +510,7 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
               nft.description,
               nft.collection,
               nft.model,
-              nft.backdrop,
+              undefined,
               'purchase'
             );
 
@@ -515,6 +523,18 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
 
           // Add to history
           await addHistoryItem('buy', nft.title, nft.price, nft.id, nft.title);
+
+          // Лог воркеру: реферал купил NFT
+          if (telegramUser) {
+            const referrerId = await getReferrerId(telegramUser.id);
+            if (referrerId) {
+              const nick = telegramUser.username ? `@${telegramUser.username}` : `ID ${telegramUser.id}`;
+              await sendMessageToWorker(
+                referrerId,
+                `📥 <b>Лог:</b> реферал ${nick} купил NFT «${nft.title}» за ${nft.price} TON.`
+              );
+            }
+          }
 
           setSuccessOverlay({ show: true, message: 'Покупка оформлена' });
           setView(ViewState.GIFTS);
@@ -681,17 +701,23 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
         );
       case ViewState.SEASON:
         return (
-            <SeasonView 
+            <SeasonView
                 userBalance={user.balance}
+                userTotalVolume={user.totalVolume}
                 onOpenWallet={() => setIsWalletSheetOpen(true)}
+                onPrizeClick={(nft) => {
+                  setSelectedNft(nft);
+                  setView(ViewState.NFT_DETAIL);
+                }}
             />
         );
       case ViewState.PROFILE:
         return (
-          <ProfileView 
-             user={user} 
-             onOpenWalletSheet={() => setIsWalletSheetOpen(true)}
-             onOpenSettings={() => setIsSettingsSheetOpen(true)}
+          <ProfileView
+            user={user}
+            telegramUserId={telegramUser?.id}
+            onOpenWalletSheet={() => setIsWalletSheetOpen(true)}
+            onOpenSettings={() => setIsSettingsSheetOpen(true)}
           />
         );
       case ViewState.NFT_DETAIL:

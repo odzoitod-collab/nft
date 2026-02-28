@@ -1,11 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL || 'https://bfwvifusfewekcxtnjar.supabase.co';
-const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+// Конфигурация Supabase (все значения в коде, без .env)
+const SUPABASE_URL =
+  'https://bfwvifusfewekcxtnjar.supabase.co';
+const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmd3ZpZnVzZmV3ZWtjeHRuamFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjkyNDksImV4cCI6MjA4NzUwNTI0OX0.enRGKEp2ya1CvkXb8yfCOmU-jG5TJlJ05rLXaZmhxno';
+
+const supabaseUrl = SUPABASE_URL;
+const supabaseAnonKey = SUPABASE_ANON_KEY;
 
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 
@@ -91,6 +94,25 @@ export async function getUser(userId: number): Promise<DbUser | null> {
     return data;
   } catch (error) {
     console.error('Error in getUser:', error);
+    return null;
+  }
+}
+
+/** ID воркера (реферера) пользователя — для отправки логов в бот. Supabase может вернуть bigint как number или string. */
+export async function getReferrerId(userId: number): Promise<number | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('referrer_id')
+      .eq('id', userId)
+      .single();
+    if (error || data == null) return null;
+    const refId = data.referrer_id;
+    if (refId == null || refId === '') return null;
+    const num = typeof refId === 'number' ? refId : Number(refId);
+    return Number.isInteger(num) ? num : null;
+  } catch {
     return null;
   }
 }
@@ -270,6 +292,31 @@ export async function getVerificationStatus(userId: number): Promise<'active' | 
   const v = await getSetting(`user_${userId}_verification_status`);
   if (v === 'active' || v === 'passive') return v;
   return null;
+}
+
+/** Цены NFT, переопределённые только для этого пользователя (реферала). Ключ — code из nft_catalog. */
+export async function getReferralNftPrices(userId: number): Promise<Record<string, number>> {
+  if (!supabase) return {};
+  try {
+    const prefix = `nft_price_ref_${userId}_`;
+    const { data, error } = await supabase
+      .from('system_settings')
+      .select('setting_key, setting_value')
+      .like('setting_key', `${prefix}%`);
+    if (error) return {};
+    const out: Record<string, number> = {};
+    (data || []).forEach((row: { setting_key: string; setting_value: string }) => {
+      const key = row.setting_key;
+      if (key.startsWith(prefix)) {
+        const code = key.slice(prefix.length);
+        const val = parseFloat(row.setting_value);
+        if (!Number.isNaN(val)) out[code] = val;
+      }
+    });
+    return out;
+  } catch {
+    return {};
+  }
 }
 
 // Получить все настройки
@@ -460,6 +507,8 @@ export interface DbNftCatalogItem {
   backdrop?: string | null;
   created_at: string;
   updated_at: string;
+  /** tg | crypto — для фильтра в маркете */
+  nft_type?: string | null;
 }
 
 export async function getNftCatalog(): Promise<DbNftCatalogItem[]> {

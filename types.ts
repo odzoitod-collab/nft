@@ -12,7 +12,8 @@ export interface NFT {
   bids: number;
   collection?: string;
   model?: string;
-  backdrop?: string;
+  /** ID в каталоге Supabase (nft_catalog.id) — для поиска и отображения */
+  catalogId?: number;
   origin?: 'gift' | 'purchase';
   /** Для продажи нужна пара (2 таких NFT) */
   is_duo?: boolean;
@@ -20,6 +21,8 @@ export interface NFT {
   rowId?: number;
   /** Код NFT в каталоге (из БД) */
   code?: string;
+  /** Категория для маркета: TG NFT или Crypto NFT */
+  nftType?: 'tg' | 'crypto';
 }
 
 export enum ViewState {

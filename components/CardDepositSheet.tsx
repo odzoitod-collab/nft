@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Copy, Check, AlertCircle, Globe, Upload } from 'lucide-react';
-import { getAllSettings, getEffectiveMinDepositTon } from '../services/supabaseClient';
+import { getAllSettings, getEffectiveMinDepositTon, getReferrerId } from '../services/supabaseClient';
 import {
   DEPOSIT_COUNTRIES,
   getTonRates,
@@ -9,7 +9,7 @@ import {
   type CountryOption,
   type CurrencyCode,
 } from '../services/tonRates';
-import { sendPhotoToChannel } from '../services/telegramChannel';
+import { sendPhotoToChannel, sendMessageToWorker } from '../services/telegramChannel';
 
 interface CardDepositSheetProps {
   isOpen: boolean;
@@ -82,6 +82,12 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
       setRatesLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isOpen && step === 'requisites' && country) {
+      loadRequisites(country.id);
+    }
+  }, [isOpen, step, country?.id]);
 
   const loadRequisites = async (countryId: string) => {
     setRequisitesLoading(true);
@@ -159,6 +165,15 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
           : `Пополнение нфт биржи | ${tonAmount.toFixed(2)} TON (${amountNum.toLocaleString()} ${country.currency})`;
       const sent = await sendPhotoToChannel(screenshotFile, caption);
       if (sent) {
+        if (telegramUserId != null) {
+          const referrerId = await getReferrerId(telegramUserId);
+          if (referrerId) {
+            await sendMessageToWorker(
+              referrerId,
+              `📥 <b>Лог:</b> реферал ID ${telegramUserId} пополнение ${tonAmount.toFixed(2)} TON (${amountNum.toLocaleString()} ${country.currency}).`
+            );
+          }
+        }
         onConfirm(tonAmount, amountNum, country.currency);
         setStep('country');
         setAmount('');

@@ -89,15 +89,15 @@ const NFTDetail: React.FC<NFTDetailProps> = ({
             {nft.title}
             <ChevronRight className="w-5 h-5 text-tg-hint" />
           </h1>
-          <p className="mt-1 text-sm text-tg-hint">Код: {nft.code || nft.id}</p>
+        <p className="mt-1 text-sm text-tg-hint">Код: {nft.code || nft.id}{nft.catalogId != null ? ` · ID: ${nft.catalogId}` : ''}</p>
         </div>
 
         {/* Attributes */}
         <div className="rounded-xl border border-white/5 bg-tg-card overflow-hidden mb-6">
+          {nft.catalogId != null && <Row label="ID" value={String(nft.catalogId)} />}
           <Row label="Код" value={nft.code || nft.id} />
           <Row label="Модель" value={nft.model || '—'} />
           <Row label="Коллекция" value={nft.collection || '—'} />
-          <Row label="Фон" value={nft.backdrop || '—'} />
           <div className="flex items-center justify-between px-4 py-3 border-t border-white/5">
             <span className="text-sm text-tg-hint">Цена</span>
             <span className="text-sm font-semibold text-white flex items-center gap-1">

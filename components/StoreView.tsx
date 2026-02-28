@@ -1,8 +1,33 @@
 import React, { useState, useMemo } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Send, Coins } from 'lucide-react';
 import { NFT } from '../types';
 import NFTCard from './NFTCard';
 import Header from './Header';
+
+/** Иконка Telegram для TG NFT */
+const TelegramIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+  </svg>
+);
+/** Иконка монет для Крипто NFT */
+const CoinsIcon = Coins;
+
+/** Анимированная иконка лупы для пустого состояния */
+const SearchIconAnimated: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <circle cx="11" cy="11" r="8" className="svg-stroke-dash" />
+    <path d="M21 21l-4.35-4.35" className="svg-draw-line" />
+  </svg>
+);
 
 interface StoreViewProps {
   nfts: NFT[];
@@ -30,16 +55,22 @@ const StoreView: React.FC<StoreViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [priceMin, setPriceMin] = useState<string>('');
   const [priceMax, setPriceMax] = useState<string>('');
+  const [marketCategory, setMarketCategory] = useState<'tg' | 'crypto'>('tg');
 
   const filteredNFTs = useMemo(() => {
+    const byCategory = nfts.filter((nft) => {
+      const type = nft.nftType ?? 'tg'; /* без поля в БД — TG NFT */
+      return type === marketCategory;
+    });
     const q = searchQuery.trim().toLowerCase();
-    return nfts.filter((nft) => {
+    return byCategory.filter((nft) => {
       const matchesSearch =
         !q ||
         (nft.title && nft.title.toLowerCase().includes(q)) ||
         (nft.subtitle && nft.subtitle.toLowerCase().includes(q)) ||
         (nft.code && nft.code.toLowerCase().includes(q)) ||
-        (nft.id && nft.id.toLowerCase().includes(q));
+        (nft.id && nft.id.toLowerCase().includes(q)) ||
+        (nft.catalogId != null && String(nft.catalogId) === q);
       if (!matchesSearch) return false;
       const min = priceMin.trim() ? parseFloat(priceMin.replace(',', '.')) : null;
       const max = priceMax.trim() ? parseFloat(priceMax.replace(',', '.')) : null;
@@ -47,7 +78,7 @@ const StoreView: React.FC<StoreViewProps> = ({
       if (max != null && !Number.isNaN(max) && nft.price > max) return false;
       return true;
     });
-  }, [nfts, searchQuery, priceMin, priceMax]);
+  }, [nfts, marketCategory, searchQuery, priceMin, priceMax]);
 
   const displayList = useMemo(() => {
     const rnd = seededRng(marketListSeed);
@@ -72,6 +103,36 @@ const StoreView: React.FC<StoreViewProps> = ({
   return (
     <div className="pb-24 animate-fade-in pt-14 bg-tg-bg min-h-screen">
       <Header balance={userBalance} onOpenWallet={onOpenWallet} />
+
+      {/* TG NFT / Crypto NFT */}
+      <div className="px-4 pt-2 pb-3">
+        <div className="flex gap-1 p-1 rounded-xl bg-tg-card border border-white/5">
+          <button
+            type="button"
+            onClick={() => setMarketCategory('tg')}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+              marketCategory === 'tg'
+                ? 'bg-tg-button text-white shadow-sm'
+                : 'text-tg-hint hover:text-white/80 hover:bg-white/5'
+            }`}
+          >
+            <TelegramIcon className="w-4 h-4" />
+            TG NFT
+          </button>
+          <button
+            type="button"
+            onClick={() => setMarketCategory('crypto')}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+              marketCategory === 'crypto'
+                ? 'bg-tg-button text-white shadow-sm'
+                : 'text-tg-hint hover:text-white/80 hover:bg-white/5'
+            }`}
+          >
+            <CoinsIcon className="w-4 h-4" />
+            Крипто NFT
+          </button>
+        </div>
+      </div>
 
       {/* Search */}
       <div className="px-4 pt-2 pb-3">
@@ -120,29 +181,29 @@ const StoreView: React.FC<StoreViewProps> = ({
       {/* Grid */}
       <div className="px-4 min-h-[200px]">
         {displayList.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 animate-in-stagger">
             {displayList.map(({ nft, key }) => (
               <NFTCard key={key} nft={nft} onClick={onNftClick} />
             ))}
           </div>
         ) : (
-          <EmptyState onReset={clearAll} />
+          <EmptyState onReset={clearAll} categoryLabel={marketCategory === 'tg' ? 'TG NFT' : 'Крипто NFT'} />
         )}
       </div>
     </div>
   );
 };
 
-const EmptyState: React.FC<{ onReset: () => void }> = ({ onReset }) => (
+const EmptyState: React.FC<{ onReset: () => void; categoryLabel: string }> = ({ onReset, categoryLabel }) => (
   <div className="flex flex-col items-center justify-center py-16 text-center">
-    <div className="w-12 h-12 rounded-full bg-tg-card border border-white/5 flex items-center justify-center mb-3">
-      <Search className="w-5 h-5 text-tg-hint opacity-50" />
+    <div className="svg-icon-pulse w-14 h-14 rounded-2xl bg-tg-card border border-white/5 flex items-center justify-center mb-4">
+      <SearchIconAnimated className="w-7 h-7 text-tg-button" />
     </div>
     <p className="text-sm font-medium text-white/90">Ничего не найдено</p>
-    <p className="text-xs text-tg-hint mt-1">Измените поиск или фильтр по цене</p>
+    <p className="text-xs text-tg-hint mt-1">В категории «{categoryLabel}» пока нет или измените поиск и фильтр</p>
     <button
       onClick={onReset}
-      className="mt-4 px-4 py-2 rounded-lg text-sm font-medium text-tg-button hover:bg-tg-button/10 transition-colors"
+      className="mt-5 px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-tg-button/90 hover:bg-tg-button transition-colors svg-btn-press"
     >
       Сбросить
     </button>
