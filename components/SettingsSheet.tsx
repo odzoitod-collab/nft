@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Shield, HelpCircle, Bell, ChevronRight, ChevronLeft, ToggleLeft, ToggleRight, ExternalLink } from 'lucide-react';
-import { getSupportUsername } from '../services/supabaseClient';
+import { getSupportUsername, getBotUsername } from '../services/supabaseClient';
 
 interface SettingsSheetProps {
   isOpen: boolean;
@@ -12,6 +12,7 @@ type SettingsTab = 'main' | 'notifications' | 'privacy' | 'help';
 const SettingsSheet: React.FC<SettingsSheetProps> = ({ isOpen, onClose }) => {
   const [currentTab, setCurrentTab] = useState<SettingsTab>('main');
   const [supportUsername, setSupportUsername] = useState<string>('your_support_username');
+  const [botUsername, setBotUsername] = useState<string>('');
 
   useEffect(() => {
     const loadSupportUsername = async () => {
@@ -26,6 +27,11 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ isOpen, onClose }) => {
     if (isOpen) {
       loadSupportUsername();
     }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    getBotUsername().then(setBotUsername);
   }, [isOpen]);
 
   const supportLink = supportUsername.replace(/^@/, '');
@@ -126,6 +132,25 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ isOpen, onClose }) => {
             {currentTab === 'help' && (
                 <div className="space-y-4 animate-fade-in">
                     <div className="bg-tg-card rounded-2xl overflow-hidden border border-white/5">
+                        {botUsername && (
+                            <a
+                                href={`https://t.me/${botUsername}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 cursor-pointer transition-colors flex items-center justify-between"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-tg-button/20 flex items-center justify-center">
+                                        <ExternalLink className="w-5 h-5 text-tg-button" />
+                                    </div>
+                                    <div>
+                                        <div className="font-semibold text-white">Открыть бота</div>
+                                        <div className="text-xs text-tg-hint">@{botUsername}</div>
+                                    </div>
+                                </div>
+                                <ExternalLink className="w-4 h-4 text-tg-hint" />
+                            </a>
+                        )}
                         <a 
                             href={`https://t.me/${supportLink}`} 
                             target="_blank" 

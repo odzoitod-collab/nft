@@ -17,11 +17,7 @@ export interface CountryOption {
 }
 
 export const DEPOSIT_COUNTRIES: CountryOption[] = [
-  { id: 'ua', label: 'Украина', currency: 'UAH', symbol: '₴', minAmount: 100, maxAmount: 500_000 },
-  { id: 'pl', label: 'Польша', currency: 'PLN', symbol: 'zł', minAmount: 20, maxAmount: 50_000 },
   { id: 'ru', label: 'Россия', currency: 'RUB', symbol: '₽', minAmount: 100, maxAmount: 1_000_000 },
-  { id: 'kz', label: 'Казахстан', currency: 'KZT', symbol: '₸', minAmount: 1000, maxAmount: 5_000_000 },
-  { id: 'eu', label: 'Европа', currency: 'EUR', symbol: '€', minAmount: 10, maxAmount: 10_000 },
 ];
 
 export interface TonRates {

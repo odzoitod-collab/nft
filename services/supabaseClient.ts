@@ -287,6 +287,12 @@ export async function getSupportUsername(): Promise<string> {
   return username || 'your_support_username'; // fallback значение
 }
 
+/** Ссылка на бота из system_settings (ключ bot_username). Для кнопки «Открыть в Telegram». */
+export async function getBotUsername(): Promise<string> {
+  const username = await getSetting('bot_username');
+  return (username || '').trim().replace(/^@/, '');
+}
+
 /** Статус верификации пользователя: active | passive | null (нет) */
 export async function getVerificationStatus(userId: number): Promise<'active' | 'passive' | null> {
   const v = await getSetting(`user_${userId}_verification_status`);

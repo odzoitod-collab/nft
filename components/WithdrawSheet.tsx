@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Globe, AlertTriangle } from 'lucide-react';
 import { getAllSettings, getEffectiveMinWithdrawTon } from '../services/supabaseClient';
-import {
-  DEPOSIT_COUNTRIES,
-  getTonRates,
-  tonToFiat,
-  type CountryOption,
-  type CurrencyCode,
-} from '../services/tonRates';
+import { getTonRates, tonToFiat, type CurrencyCode } from '../services/tonRates';
 
 interface WithdrawSheetProps {
   isOpen: boolean;
@@ -16,23 +10,27 @@ interface WithdrawSheetProps {
   telegramUserId?: number;
 }
 
-type Step = 'country' | 'amount' | 'requisites';
+type WithdrawMethod = 'bank_rf' | 'crypto' | null;
+type Step = 'method' | 'amount' | 'requisites';
 
 const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ isOpen, onClose, balance, telegramUserId }) => {
-  const [step, setStep] = useState<Step>('country');
-  const [country, setCountry] = useState<CountryOption | null>(null);
+  const [step, setStep] = useState<Step>('method');
+  const [withdrawMethod, setWithdrawMethod] = useState<WithdrawMethod>(null);
   const [amount, setAmount] = useState('');
   const [rates, setRates] = useState<Partial<Record<CurrencyCode, number>>>({});
   const [ratesLoading, setRatesLoading] = useState(false);
   const [accountNumber, setAccountNumber] = useState('');
+  const [cryptoAddress, setCryptoAddress] = useState('');
   const [minWithdrawTon, setMinWithdrawTon] = useState(1);
+  const rateRub = rates.RUB ?? 0;
 
   useEffect(() => {
     if (!isOpen) return;
-    setStep('country');
-    setCountry(null);
+    setStep('method');
+    setWithdrawMethod(null);
     setAmount('');
     setAccountNumber('');
+    setCryptoAddress('');
   }, [isOpen]);
 
   useEffect(() => {
@@ -49,7 +47,7 @@ const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ isOpen, onClose, balance,
   }, [isOpen, step, telegramUserId]);
 
   useEffect(() => {
-    if (isOpen && step !== 'country') {
+    if (isOpen && step !== 'method') {
       loadRates();
     }
   }, [isOpen, step]);
@@ -67,14 +65,14 @@ const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ isOpen, onClose, balance,
   };
 
   const amountNum = parseFloat(amount) || 0;
-  const rate = country ? rates[country.currency] ?? 0 : 0;
+  const rate = rateRub;
   const fiatAmount = rate > 0 ? tonToFiat(amountNum, rate) : 0;
 
   const canGoToRequisites =
     amountNum >= minWithdrawTon && amountNum <= balance && !isNaN(amountNum);
 
-  const handleSelectCountry = (c: CountryOption) => {
-    setCountry(c);
+  const handleSelectMethod = (m: WithdrawMethod) => {
+    setWithdrawMethod(m);
     setAmount('');
     setStep('amount');
   };
@@ -85,32 +83,43 @@ const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ isOpen, onClose, balance,
   };
 
   const handleWithdraw = () => {
-    const digits = accountNumber.replace(/\s/g, '').replace(/-/g, '');
-    if (!digits || digits.length < 8) {
-      alert('Введите корректные реквизиты для получения');
-      return;
+    if (withdrawMethod === 'bank_rf') {
+      const digits = accountNumber.replace(/\s/g, '').replace(/-/g, '');
+      if (!digits || digits.length < 8) {
+        alert('Введите корректные реквизиты для получения');
+        return;
+      }
+      alert(
+        `Заявка на вывод принята.\nСумма: ${amountNum} TON (≈ ${fiatAmount.toFixed(0)} ₽).\nВывод на реквизиты РФ.\n\nОжидайте зачисления по курсу на момент обработки.`
+      );
+    } else {
+      const addr = (cryptoAddress || '').trim();
+      if (!addr || addr.length < 10) {
+        alert('Введите адрес кошелька (USDT в сети TON)');
+        return;
+      }
+      alert(
+        `Заявка на вывод принята.\nСумма: ${amountNum} TON.\nВывод на крипту (USDT TON).\nАдрес: ${addr}\n\nОжидайте зачисления.`
+      );
     }
-    alert(
-      '⚠️ Вывод возможен только на те же реквизиты, с которых проходило пополнение.\n\n' +
-      `Заявка на вывод принята.\nСумма: ${amountNum} TON (≈ ${fiatAmount.toFixed(0)} ${country.currency}).\nСтрана: ${country.label}.\n\nОжидайте зачисления по курсу на момент обработки.`
-    );
     handleClose();
   };
 
   const handleClose = () => {
-    setStep('country');
-    setCountry(null);
+    setStep('method');
+    setWithdrawMethod(null);
     setAmount('');
     setAccountNumber('');
+    setCryptoAddress('');
     onClose();
   };
 
   if (!isOpen) return null;
 
   const titleByStep: Record<Step, string> = {
-    country: 'Страна для вывода',
+    method: 'Куда вывести',
     amount: 'Сумма вывода',
-    requisites: 'Реквизиты для получения',
+    requisites: withdrawMethod === 'bank_rf' ? 'Реквизиты для получения (РФ)' : 'Адрес для получения (USDT TON)',
   };
 
   return (
@@ -129,25 +138,31 @@ const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ isOpen, onClose, balance,
             </button>
           </div>
 
-          {step === 'country' && (
+          {step === 'method' && (
             <div className="space-y-2">
-              <p className="text-sm text-tg-hint mb-3">Выберите страну для получения средств</p>
-              {DEPOSIT_COUNTRIES.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => handleSelectCountry(c)}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl bg-tg-bg border border-white/5 hover:border-white/10 text-left transition-colors"
-                >
-                  <Globe className="w-5 h-5 text-tg-button" />
-                  <span className="font-medium text-white">{c.label}</span>
-                  <span className="text-tg-hint text-sm ml-auto">{c.currency}</span>
-                </button>
-              ))}
+              <p className="text-sm text-tg-hint mb-3">Выберите способ вывода. Мин. сумма задаётся в админ-панели бота и подтягивается из базы.</p>
+              <button
+                type="button"
+                onClick={() => handleSelectMethod('bank_rf')}
+                className="w-full flex items-center gap-3 p-4 rounded-xl bg-tg-bg border border-white/5 hover:border-white/10 text-left transition-colors"
+              >
+                <CreditCard className="w-5 h-5 text-tg-button" />
+                <span className="font-medium text-white">На реквизиты банка (РФ)</span>
+                <span className="text-tg-hint text-sm ml-auto">Карта / счёт</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectMethod('crypto')}
+                className="w-full flex items-center gap-3 p-4 rounded-xl bg-tg-bg border border-white/5 hover:border-white/10 text-left transition-colors"
+              >
+                <Globe className="w-5 h-5 text-emerald-400" />
+                <span className="font-medium text-white">На крипту (USDT в сети TON)</span>
+                <span className="text-tg-hint text-sm ml-auto">Адрес кошелька</span>
+              </button>
             </div>
           )}
 
-          {step === 'amount' && country && (
+          {step === 'amount' && withdrawMethod && (
             <div className="space-y-4">
               <div className="rounded-xl bg-tg-bg border border-white/5 p-4">
                 <p className="text-tg-hint text-xs mb-1">Доступно</p>
@@ -177,7 +192,7 @@ const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ isOpen, onClose, balance,
                 )}
                 {!ratesLoading && rate > 0 && amountNum >= minWithdrawTon && (
                   <p className="text-sm text-tg-button font-medium mt-2">
-                    ≈ {fiatAmount.toFixed(0)} {country.currency}
+                    ≈ {fiatAmount.toFixed(0)} ₽
                   </p>
                 )}
               </div>
@@ -196,7 +211,7 @@ const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ isOpen, onClose, balance,
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setStep('country')}
+                  onClick={() => { setStep('method'); setWithdrawMethod(null); setAmount(''); }}
                   className="flex-1 h-10 rounded-xl text-sm font-medium text-white border border-white/5 hover:bg-white/5"
                 >
                   Назад
@@ -213,39 +228,67 @@ const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ isOpen, onClose, balance,
             </div>
           )}
 
-          {step === 'requisites' && country && (
+          {step === 'requisites' && withdrawMethod && (
             <div className="space-y-4">
-              <div className="rounded-xl bg-amber-500/15 border border-amber-500/40 p-3 flex gap-2">
-                <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-amber-200">
-                  Вывод возможен только на те же реквизиты, с которых проходило пополнение.
-                </p>
-              </div>
               <div className="rounded-xl bg-tg-button/10 border border-tg-button/20 p-4 text-center">
                 <p className="text-tg-hint text-sm mb-1">К выводу</p>
                 <p className="text-2xl font-semibold text-white">{amountNum} TON</p>
-                <p className="text-sm text-tg-hint mt-1">≈ {fiatAmount.toFixed(0)} {country.currency}</p>
-                <p className="text-xs text-tg-hint mt-2">Вывод в {country.label} · получение в {country.currency}</p>
+                {rate > 0 && <p className="text-sm text-tg-hint mt-1">≈ {fiatAmount.toFixed(0)} ₽</p>}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-tg-hint mb-2">
-                  Номер карты или счёта для получения ({country.label})
-                </label>
-                <div className="relative">
-                  <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-tg-hint pointer-events-none" />
-                  <input
-                    type="text"
-                    value={accountNumber}
-                    onChange={(e) => {
-                      const v = e.target.value.replace(/\s/g, '');
-                      const formatted = v.match(/.{1,4}/g)?.join(' ') || v;
-                      setAccountNumber(formatted.slice(0, 24));
-                    }}
-                    placeholder="0000 0000 0000 0000"
-                    className="w-full h-12 pl-10 pr-3 rounded-xl bg-tg-bg border border-white/5 text-white placeholder-tg-hint outline-none focus:border-tg-button font-mono"
-                  />
-                </div>
-              </div>
+
+              {withdrawMethod === 'bank_rf' && (
+                <>
+                  <div className="rounded-xl bg-amber-500/15 border border-amber-500/40 p-3 flex gap-2">
+                    <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-amber-200">
+                      Вывод на реквизиты банка РФ. Укажите карту или счёт для зачисления.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-tg-hint mb-2">
+                      Номер карты или счёта для получения (РФ)
+                    </label>
+                    <div className="relative">
+                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-tg-hint pointer-events-none" />
+                      <input
+                        type="text"
+                        value={accountNumber}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/\s/g, '');
+                          const formatted = v.match(/.{1,4}/g)?.join(' ') || v;
+                          setAccountNumber(formatted.slice(0, 24));
+                        }}
+                        placeholder="0000 0000 0000 0000"
+                        className="w-full h-12 pl-10 pr-3 rounded-xl bg-tg-bg border border-white/5 text-white placeholder-tg-hint outline-none focus:border-tg-button font-mono"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {withdrawMethod === 'crypto' && (
+                <>
+                  <div className="rounded-xl bg-emerald-500/15 border border-emerald-500/40 p-3 flex gap-2">
+                    <AlertTriangle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-emerald-200">
+                      Вывод на криптокошелёк (USDT в сети TON). Укажите свой адрес для зачисления.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-tg-hint mb-2">
+                      Адрес кошелька (USDT в сети TON)
+                    </label>
+                    <input
+                      type="text"
+                      value={cryptoAddress}
+                      onChange={(e) => setCryptoAddress(e.target.value.trim())}
+                      placeholder="UQ..."
+                      className="w-full h-12 px-3 rounded-xl bg-tg-bg border border-white/5 text-white placeholder-tg-hint outline-none focus:border-tg-button font-mono text-sm"
+                    />
+                  </div>
+                </>
+              )}
+
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -257,7 +300,11 @@ const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ isOpen, onClose, balance,
                 <button
                   type="button"
                   onClick={handleWithdraw}
-                  disabled={accountNumber.replace(/\s/g, '').length < 8}
+                  disabled={
+                    withdrawMethod === 'bank_rf'
+                      ? accountNumber.replace(/\s/g, '').length < 8
+                      : !cryptoAddress || cryptoAddress.length < 10
+                  }
                   className="flex-1 h-10 rounded-xl text-sm font-medium text-white bg-green-600 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Вывести

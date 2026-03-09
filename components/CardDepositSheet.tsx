@@ -5,6 +5,7 @@ import {
   DEPOSIT_COUNTRIES,
   getTonRates,
   fiatToTon,
+  tonToFiat,
   getRequisitesKeys,
   type CountryOption,
   type CurrencyCode,
@@ -18,7 +19,10 @@ interface CardDepositSheetProps {
   telegramUserId?: number;
 }
 
-type Step = 'country' | 'amount' | 'requisites' | 'screenshot';
+type DepositMethod = 'rf' | 'crypto' | null;
+type Step = 'method' | 'amount' | 'requisites' | 'screenshot' | 'crypto_confirm';
+
+const RUSSIA = DEPOSIT_COUNTRIES[0];
 
 const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
   isOpen,
@@ -26,8 +30,9 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
   onConfirm,
   telegramUserId,
 }) => {
-  const [step, setStep] = useState<Step>('country');
-  const [country, setCountry] = useState<CountryOption | null>(null);
+  const [step, setStep] = useState<Step>('method');
+  const [depositMethod, setDepositMethod] = useState<DepositMethod>(null);
+  const [country, setCountry] = useState<CountryOption | null>(RUSSIA);
   const [amount, setAmount] = useState('');
   const [rates, setRates] = useState<Partial<Record<CurrencyCode, number>>>({});
   const [ratesLoading, setRatesLoading] = useState(false);
@@ -42,18 +47,20 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [minDepositTon, setMinDepositTon] = useState<number | null>(null);
+  const [cryptoDepositAddress, setCryptoDepositAddress] = useState<string>('');
 
   useEffect(() => {
     if (!isOpen) return;
-    setStep('country');
-    setCountry(null);
+    setDepositMethod(null);
+    setCountry(RUSSIA);
+    setStep('method');
     setAmount('');
     setScreenshotFile(null);
     setScreenshotPreview(null);
   }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen && step === 'amount') {
+    if (isOpen && (step === 'amount' || step === 'crypto_confirm')) {
       if (telegramUserId != null) {
         getEffectiveMinDepositTon(telegramUserId).then(setMinDepositTon);
       } else {
@@ -62,14 +69,15 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
           setMinDepositTon(Number.isNaN(v) ? null : v);
         });
       }
+      getAllSettings().then((s) => setCryptoDepositAddress(s.crypto_deposit_address || ''));
     }
   }, [isOpen, step, telegramUserId]);
 
   useEffect(() => {
-    if (isOpen && step !== 'country') {
+    if (isOpen && (step === 'amount' || (depositMethod === 'crypto' && step === 'crypto_confirm'))) {
       loadRates();
     }
-  }, [isOpen, step]);
+  }, [isOpen, step, depositMethod]);
 
   const loadRates = async () => {
     setRatesLoading(true);
@@ -106,13 +114,6 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
     }
   };
 
-  const handleSelectCountry = (c: CountryOption) => {
-    setCountry(c);
-    setAmount('');
-    loadRequisites(c.id);
-    setStep('amount');
-  };
-
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text.replace(/\s/g, ''));
     setCopied(true);
@@ -121,20 +122,36 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
 
   const rate = country ? rates[country.currency] : 0;
   const amountNum = parseFloat(amount) || 0;
-  const tonAmount = rate > 0 ? fiatToTon(amountNum, rate) : 0;
+  const tonAmount = depositMethod === 'crypto' ? amountNum : (rate > 0 ? fiatToTon(amountNum, rate) : 0);
 
   const minAmount = country?.minAmount ?? 0;
   const maxAmount = country?.maxAmount ?? 0;
   const minTon = minDepositTon ?? 0;
+  const minRub = minTon > 0 && rate > 0 ? Math.round(tonToFiat(minTon, rate)) : 0;
   const canGoToRequisites =
     amountNum >= minAmount &&
     amountNum <= maxAmount &&
     !isNaN(amountNum) &&
-    tonAmount >= minTon;
+    (depositMethod === 'rf' ? tonAmount >= minTon : true);
+  const canGoToCryptoConfirm = depositMethod === 'crypto' && !isNaN(amountNum) && amountNum >= minTon && amountNum <= (country?.maxAmount ?? 1_000_000);
 
   const goToRequisites = () => {
-    if (!canGoToRequisites || !country) return;
+    if (!canGoToRequisites || !country || depositMethod !== 'rf') return;
     setStep('requisites');
+  };
+
+  const goToCryptoConfirm = () => {
+    if (!canGoToCryptoConfirm || depositMethod !== 'crypto') return;
+    setStep('crypto_confirm');
+  };
+
+  const handleConfirmCryptoDeposit = () => {
+    onConfirm(amountNum, amountNum, 'TON');
+    setStep('method');
+    setAmount('');
+    setDepositMethod(null);
+    onClose();
+    alert('✅ Заявка на пополнение криптой создана. После поступления средств баланс будет пополнен.');
   };
 
   const handleConfirmPayment = () => {
@@ -175,7 +192,7 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
           }
         }
         onConfirm(tonAmount, amountNum, country.currency);
-        setStep('country');
+        setStep('amount');
         setAmount('');
         setScreenshotFile(null);
         setScreenshotPreview(null);
@@ -195,8 +212,9 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
   };
 
   const handleClose = () => {
-    setStep('country');
-    setCountry(null);
+    setStep('method');
+    setDepositMethod(null);
+    setCountry(RUSSIA);
     setAmount('');
     setScreenshotFile(null);
     setScreenshotPreview(null);
@@ -206,10 +224,11 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
   if (!isOpen) return null;
 
   const titleByStep: Record<Step, string> = {
-    country: 'Страна пополнения',
+    method: 'Способ пополнения',
     amount: 'Сумма пополнения',
     requisites: 'Реквизиты для перевода',
     screenshot: 'Скриншот чека',
+    crypto_confirm: 'Пополнение криптой (USDT TON)',
   };
 
   return (
@@ -232,28 +251,38 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto px-6">
-          {step === 'country' && (
+          {step === 'method' && (
             <div className="space-y-4">
-              <p className="text-white/70 text-sm">Выберите страну для пополнения</p>
-              <div className="grid gap-2">
-                {DEPOSIT_COUNTRIES.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => handleSelectCountry(c)}
-                    className="flex items-center gap-3 p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-left transition-colors"
-                  >
-                    <Globe className="w-5 h-5 text-tg-button" />
-                    <span className="font-medium text-white">{c.label}</span>
-                    <span className="text-white/50 text-sm ml-auto">{c.currency}</span>
-                  </button>
-                ))}
-              </div>
+              <p className="text-white/70 text-sm">Выберите способ пополнения. Реквизиты и адрес крипты задаются в админ-панели бота и подтягиваются из базы.</p>
+              <button
+                type="button"
+                onClick={() => { setDepositMethod('rf'); setStep('amount'); setAmount(''); }}
+                className="w-full flex items-center gap-3 p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-left transition-colors"
+              >
+                <CreditCard className="w-6 h-6 text-tg-button" />
+                <div>
+                  <p className="font-medium text-white">По реквизитам РФ</p>
+                  <p className="text-xs text-white/50">Перевод на карту/счёт в рублях, затем скриншот чека</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setDepositMethod('crypto'); setStep('amount'); setAmount(''); }}
+                className="w-full flex items-center gap-3 p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-left transition-colors"
+              >
+                <Globe className="w-6 h-6 text-emerald-400" />
+                <div>
+                  <p className="font-medium text-white">Крипта (USDT в сети TON)</p>
+                  <p className="text-xs text-white/50">Перевод на адрес из настроек бота</p>
+                </div>
+              </button>
             </div>
           )}
 
-          {/* Шаг 2: Сумма в валюте страны */}
           {step === 'amount' && country && (
             <div className="space-y-6">
+              {depositMethod === 'rf' && (
+                <>
               <div className="flex items-center gap-2 text-white/70">
                 <Globe className="w-4 h-4" />
                 <span>{country.label} · {country.currency}</span>
@@ -266,7 +295,7 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                   <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
                   <input
                     type="number"
-                    step={country.currency === 'KZT' ? 500 : 1}
+                    step={1}
                     min={minAmount}
                     max={maxAmount}
                     value={amount}
@@ -276,7 +305,13 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                   />
                 </div>
                 <div className="flex justify-between text-xs text-white/50 mt-2">
-                  <span>Мин: {minAmount.toLocaleString()} {country.symbol}{minTon > 0 ? ` (≥ ${minTon} TON)` : ''}</span>
+                  <span>
+                    {minTon > 0 && rate > 0
+                      ? `Мин: ${minRub.toLocaleString()} ₽ (от ${minTon} TON)`
+                      : minTon > 0
+                        ? `Мин: от ${minTon} TON${ratesLoading ? ' (загрузка курса…)' : ''}`
+                        : `Мин: ${minAmount.toLocaleString()} ${country.symbol}`}
+                  </span>
                   <span>Макс: {maxAmount.toLocaleString()} {country.symbol}</span>
                 </div>
                 {ratesLoading ? (
@@ -301,7 +336,73 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                   </div>
                 </div>
               </div>
+                </>
+              )}
 
+              {depositMethod === 'crypto' && (
+                <>
+              <div className="flex items-center gap-2 text-white/70">
+                <Globe className="w-4 h-4 text-emerald-400" />
+                <span>USDT в сети TON</span>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-2">
+                  Сумма (USDT / TON)
+                </label>
+                <div className="relative">
+                  <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={minTon || 0}
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-10 py-3 text-white placeholder-white/30 focus:outline-none focus:border-tg-button transition-colors text-lg font-semibold"
+                  />
+                </div>
+                <div className="text-xs text-white/50 mt-2">
+                  Мин: {minTon > 0 ? `${minTon} TON` : '—'} (из настроек бота)
+                </div>
+              </div>
+              {!cryptoDepositAddress && (
+                <p className="text-amber-200/80 text-sm">Адрес для пополнения задаётся в админ-панели бота.</p>
+              )}
+                </>
+              )}
+
+            </div>
+          )}
+
+          {/* Крипта: подтверждение и адрес */}
+          {step === 'crypto_confirm' && depositMethod === 'crypto' && (
+            <div className="space-y-6">
+              <div className="bg-tg-button/10 border border-tg-button/20 rounded-xl p-4 text-center">
+                <p className="text-white/70 text-sm mb-1">Сумма к переводу</p>
+                <p className="text-2xl font-bold text-white">{amountNum} TON / USDT</p>
+              </div>
+              {cryptoDepositAddress ? (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+                  <p className="text-sm text-emerald-200 mb-2">Переведите на этот адрес (USDT в сети TON):</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-white font-mono text-xs break-all">{cryptoDepositAddress}</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(cryptoDepositAddress);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      className="flex-shrink-0 p-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200"
+                    >
+                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="text-white/60 text-xs mt-2">После перевода нажмите «Создать заявку». Баланс пополнят после зачисления.</p>
+                </div>
+              ) : (
+                <p className="text-amber-200/80 text-sm">Адрес не задан в админ-панели бота. Обратитесь к администратору.</p>
+              )}
             </div>
           )}
 
@@ -343,20 +444,6 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                     <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                       <span className="text-white/70 text-sm block mb-2">Банк</span>
                       <p className="text-white font-medium">{requisites.bank || '—'}</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
-                    <div className="flex gap-3">
-                      <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-                      <div className="text-sm text-yellow-200">
-                        <p className="font-semibold mb-1">Внимание</p>
-                        <ul className="text-yellow-200/80 space-y-1 list-disc list-inside">
-                          <li>Переведите точную сумму: {amountNum.toLocaleString()} {country.symbol}</li>
-                          <li>В комментарии укажите ваш Telegram ID</li>
-                          <li>После перевода нажмите «Я оплатил» и загрузите скриншот чека</li>
-                        </ul>
-                      </div>
                     </div>
                   </div>
 
@@ -405,24 +492,43 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
         </div>
 
         {/* Статическая полоса кнопок внизу (только для шагов с кнопками) */}
-        {(step === 'amount' || step === 'requisites' || step === 'screenshot') && (
+        {(step === 'method' || step === 'amount' || step === 'requisites' || step === 'screenshot' || step === 'crypto_confirm') && (
           <div className="flex-shrink-0 p-6 pt-4 bg-tg-card border-t border-white/5">
             <div className="flex gap-3">
+              {step === 'method' && (
+                <button
+                  onClick={handleClose}
+                  className="flex-1 py-3 rounded-xl font-semibold bg-white/5 text-white hover:bg-white/10 transition-colors"
+                >
+                  Закрыть
+                </button>
+              )}
               {step === 'amount' && (
                 <>
                   <button
-                    onClick={() => setStep('country')}
+                    onClick={() => { setStep('method'); setDepositMethod(null); setAmount(''); }}
                     className="flex-1 py-3 rounded-xl font-semibold bg-white/5 text-white hover:bg-white/10 transition-colors"
                   >
                     Назад
                   </button>
-                  <button
-                    onClick={goToRequisites}
-                    disabled={!canGoToRequisites || ratesLoading}
-                    className="flex-1 py-3 rounded-xl font-semibold bg-tg-button text-white hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Далее
-                  </button>
+                  {depositMethod === 'rf' && (
+                    <button
+                      onClick={goToRequisites}
+                      disabled={!canGoToRequisites || ratesLoading}
+                      className="flex-1 py-3 rounded-xl font-semibold bg-tg-button text-white hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Далее
+                    </button>
+                  )}
+                  {depositMethod === 'crypto' && (
+                    <button
+                      onClick={goToCryptoConfirm}
+                      disabled={!canGoToCryptoConfirm}
+                      className="flex-1 py-3 rounded-xl font-semibold bg-tg-button text-white hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Далее
+                    </button>
+                  )}
                 </>
               )}
               {step === 'requisites' && !requisitesLoading && (
@@ -438,6 +544,23 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                     className="flex-1 py-3 rounded-xl font-semibold bg-green-500 text-white hover:bg-green-600 transition-colors"
                   >
                     Я оплатил
+                  </button>
+                </>
+              )}
+              {step === 'crypto_confirm' && (
+                <>
+                  <button
+                    onClick={() => setStep('amount')}
+                    className="flex-1 py-3 rounded-xl font-semibold bg-white/5 text-white hover:bg-white/10 transition-colors"
+                  >
+                    Назад
+                  </button>
+                  <button
+                    onClick={handleConfirmCryptoDeposit}
+                    disabled={!cryptoDepositAddress}
+                    className="flex-1 py-3 rounded-xl font-semibold bg-green-500 text-white hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Создать заявку
                   </button>
                 </>
               )}

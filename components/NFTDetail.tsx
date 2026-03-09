@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NFT } from '../types';
-import { X, Share2, ChevronRight, Gem, Check } from 'lucide-react';
+import { X, ChevronRight, Gem, Check } from 'lucide-react';
 import SellNFTSheet from './SellNFTSheet';
 
 interface NFTDetailProps {
@@ -106,14 +106,6 @@ const NFTDetail: React.FC<NFTDetailProps> = ({
             </span>
           </div>
         </div>
-
-        <button
-          type="button"
-          className="w-full h-10 rounded-lg border border-white/5 flex items-center justify-center gap-2 text-sm text-tg-hint hover:bg-white/5 hover:text-white transition-colors"
-        >
-          <Share2 className="w-4 h-4" />
-          Поделиться
-        </button>
       </div>
 
       {/* Bottom actions */}
