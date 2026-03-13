@@ -40,6 +40,14 @@ const NFTDetail: React.FC<NFTDetailProps> = ({
   const [isSellSheetOpen, setIsSellSheetOpen] = useState(false);
   const [showBuyAgreement, setShowBuyAgreement] = useState(false);
 
+  const handleBuyClick = useCallback(() => {
+    if (!canBuy) {
+      onOpenWallet();
+      return;
+    }
+    setShowBuyAgreement(true);
+  }, [canBuy, onOpenWallet]);
+
   // TG BackButton: показываем на full-screen, дублируем нашу кнопку «Назад»
   useEffect(() => {
     showBackButton();
@@ -70,14 +78,6 @@ const NFTDetail: React.FC<NFTDetailProps> = ({
   const handleSell = (price: number, instant: boolean) => {
     onSellNFT?.(nft, price, instant);
   };
-
-  const handleBuyClick = useCallback(() => {
-    if (!canBuy) {
-      onOpenWallet();
-      return;
-    }
-    setShowBuyAgreement(true);
-  }, [canBuy, onOpenWallet]);
 
   const handleBuyConfirm = () => {
     setShowBuyAgreement(false);
