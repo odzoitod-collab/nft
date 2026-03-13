@@ -115,6 +115,11 @@ const ProfileView: React.FC<ProfileViewProps> = ({
           <h1 className="mt-4 text-xl font-semibold text-white tracking-tight">
             {user?.username}
           </h1>
+          {telegramUserId != null && (
+            <p className="mt-1 text-xs text-tg-hint">
+              TG ID: <span className="font-mono text-white/80">{telegramUserId}</span>
+            </p>
+          )}
         </div>
 
         {/* Статус верификации — из Supabase */}

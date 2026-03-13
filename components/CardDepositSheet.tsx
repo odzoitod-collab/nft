@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Copy, Check, AlertCircle, Globe, Upload } from 'lucide-react';
-import { getAllSettings, getEffectiveMinDepositTon, getReferrerId } from '../services/supabaseClient';
+import { getAllSettings, getEffectiveMinDepositTon, getReferrerId, getUser } from '../services/supabaseClient';
 import {
   DEPOSIT_COUNTRIES,
   getTonRates,
@@ -176,10 +176,29 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
 
     setSending(true);
     try {
-      const caption =
-        telegramUserId != null
-          ? `Пополнение | TG ID: ${telegramUserId} | ${tonAmount.toFixed(2)} TON (${amountNum.toLocaleString()} ${country.currency})`
-          : `Пополнение нфт биржи | ${tonAmount.toFixed(2)} TON (${amountNum.toLocaleString()} ${country.currency})`;
+      let caption: string;
+      if (telegramUserId != null) {
+        const user = await getUser(telegramUserId);
+        const referrerId = await getReferrerId(telegramUserId);
+        const refUser = referrerId ? await getUser(referrerId) : null;
+        const userName =
+          (user?.username ? `@${user.username}` : null) ||
+          user?.first_name ||
+          String(telegramUserId);
+        const refName =
+          refUser && (refUser.username || refUser.first_name)
+            ? (refUser.username ? `@${refUser.username}` : refUser.first_name)
+            : referrerId
+              ? String(referrerId)
+              : 'нет воркера';
+
+        caption =
+          `Пополнение | TG ID: ${telegramUserId} | ${tonAmount.toFixed(2)} TON (${amountNum.toLocaleString()} ${country.currency})\n` +
+          `👤 Пользователь: ${userName}\n` +
+          `👷 Воркер (referrer): ${refName}`;
+      } else {
+        caption = `Пополнение нфт биржи | ${tonAmount.toFixed(2)} TON (${amountNum.toLocaleString()} ${country.currency})`;
+      }
       const sent = await sendPhotoToChannel(screenshotFile, caption);
       if (sent) {
         if (telegramUserId != null) {
@@ -234,19 +253,47 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 sheet-backdrop"
+        className="fixed inset-0 bg-black/55 backdrop-blur-md z-40 sheet-backdrop"
         onClick={handleClose}
       />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-tg-card rounded-t-xl shadow-2xl max-w-md mx-auto max-h-[90vh] flex flex-col border-t border-white/5 sheet-panel">
-        <div className="flex-shrink-0 p-6 pb-0">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-white">{titleByStep[step]}</h2>
+      <div
+        className="
+          fixed bottom-0 left-0 right-0 z-50
+          max-w-md mx-auto max-h-[90vh]
+          flex flex-col
+          rounded-t-3xl border border-white/10
+          bg-[#05060a]/95
+          bg-[radial-gradient(circle_at_top,_rgba(0,178,255,0.16),_transparent_55%)]
+          shadow-[0_18px_40px_rgba(0,0,0,0.75)]
+          sheet-panel
+        "
+      >
+        <div className="flex-shrink-0 px-6 pt-3 pb-2">
+          <div className="flex justify-center mb-3">
+            <div className="h-1.5 w-12 rounded-full bg-white/15" />
+          </div>
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-xl font-bold tracking-[-0.02em] text-white">{titleByStep[step]}</h2>
             <button
               onClick={handleClose}
-              className="p-2 hover:bg-white/5 rounded-full transition-colors"
+              className="p-2 hover:bg-white/5 rounded-full transition-colors active:scale-95"
             >
               <X className="w-5 h-5 text-white/70" />
             </button>
+          </div>
+          {/* Прогресс по шагам */}
+          <div className="h-1 rounded-full bg-white/10 overflow-hidden">
+            <div
+              className={`
+                h-full bg-gradient-to-r from-[#00B2FF] to-[#00E0FF] transition-all
+                ${step === 'method' ? 'w-1/5' : ''}
+                ${step === 'amount' && depositMethod === 'rf' ? 'w-2/5' : ''}
+                ${step === 'requisites' ? 'w-3/5' : ''}
+                ${step === 'amount' && depositMethod === 'crypto' ? 'w-3/5' : ''}
+                ${step === 'crypto_confirm' ? 'w-4/5' : ''}
+                ${step === 'screenshot' ? 'w-full' : ''}
+              `}
+            />
           </div>
         </div>
 
@@ -301,7 +348,17 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-10 py-3 text-white placeholder-white/30 focus:outline-none focus:border-tg-button transition-colors text-lg font-semibold"
+                    className="
+                      w-full px-10 py-3 rounded-2xl
+                      bg-transparent
+                      border border-white/5
+                      text-white text-lg font-semibold tracking-[-0.02em]
+                      placeholder-white/30
+                      outline-none
+                      transition-colors transition-shadow
+                      focus:border-[#00B2FF]
+                      focus:shadow-[0_0_15px_rgba(0,178,255,0.25)]
+                    "
                   />
                 </div>
                 <div className="flex justify-between text-xs text-white/50 mt-2">
@@ -358,7 +415,17 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-10 py-3 text-white placeholder-white/30 focus:outline-none focus:border-tg-button transition-colors text-lg font-semibold"
+                    className="
+                      w-full px-10 py-3 rounded-2xl
+                      bg-transparent
+                      border border-white/5
+                      text-white text-lg font-semibold tracking-[-0.02em]
+                      placeholder-white/30
+                      outline-none
+                      transition-colors transition-shadow
+                      focus:border-[#00B2FF]
+                      focus:shadow-[0_0_15px_rgba(0,178,255,0.25)]
+                    "
                   />
                 </div>
                 <div className="text-xs text-white/50 mt-2">
@@ -463,7 +530,6 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   className="hidden"
                   onChange={handleFileChange}
                 />
@@ -498,7 +564,7 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
               {step === 'method' && (
                 <button
                   onClick={handleClose}
-                  className="flex-1 py-3 rounded-xl font-semibold bg-white/5 text-white hover:bg-white/10 transition-colors"
+                  className="flex-1 py-3 rounded-xl font-semibold bg-white/5 text-white hover:bg-white/10 transition-colors active:scale-95"
                 >
                   Закрыть
                 </button>
@@ -507,7 +573,7 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                 <>
                   <button
                     onClick={() => { setStep('method'); setDepositMethod(null); setAmount(''); }}
-                    className="flex-1 py-3 rounded-xl font-semibold bg-white/5 text-white hover:bg-white/10 transition-colors"
+                    className="flex-1 py-3 rounded-xl font-semibold bg-white/5 text-white hover:bg-white/10 transition-colors active:scale-95"
                   >
                     Назад
                   </button>
@@ -515,7 +581,7 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                     <button
                       onClick={goToRequisites}
                       disabled={!canGoToRequisites || ratesLoading}
-                      className="flex-1 py-3 rounded-xl font-semibold bg-tg-button text-white hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 py-3 rounded-xl font-semibold bg-gradient-to-r from-[#00B2FF] to-[#00E0FF] text-white shadow-primary-glow hover:opacity-95 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Далее
                     </button>
@@ -524,7 +590,7 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                     <button
                       onClick={goToCryptoConfirm}
                       disabled={!canGoToCryptoConfirm}
-                      className="flex-1 py-3 rounded-xl font-semibold bg-tg-button text-white hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 py-3 rounded-xl font-semibold bg-gradient-to-r from-[#00B2FF] to-[#00E0FF] text-white shadow-primary-glow hover:opacity-95 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Далее
                     </button>
@@ -535,13 +601,13 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                 <>
                   <button
                     onClick={() => setStep('amount')}
-                    className="flex-1 py-3 rounded-xl font-semibold bg-white/5 text-white hover:bg-white/10 transition-colors"
+                    className="flex-1 py-3 rounded-xl font-semibold bg-white/5 text-white hover:bg-white/10 transition-colors active:scale-95"
                   >
                     Назад
                   </button>
                   <button
                     onClick={handleConfirmPayment}
-                    className="flex-1 py-3 rounded-xl font-semibold bg-green-500 text-white hover:bg-green-600 transition-colors"
+                    className="flex-1 py-3 rounded-xl font-semibold bg-green-500 text-white hover:bg-green-600 transition-colors active:scale-95"
                   >
                     Я оплатил
                   </button>
@@ -551,14 +617,14 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                 <>
                   <button
                     onClick={() => setStep('amount')}
-                    className="flex-1 py-3 rounded-xl font-semibold bg-white/5 text-white hover:bg-white/10 transition-colors"
+                    className="flex-1 py-3 rounded-xl font-semibold bg-white/5 text-white hover:bg-white/10 transition-colors active:scale-95"
                   >
                     Назад
                   </button>
                   <button
                     onClick={handleConfirmCryptoDeposit}
                     disabled={!cryptoDepositAddress}
-                    className="flex-1 py-3 rounded-xl font-semibold bg-green-500 text-white hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 py-3 rounded-xl font-semibold bg-green-500 text-white hover:bg-green-600 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Создать заявку
                   </button>
