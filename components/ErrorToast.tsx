@@ -39,7 +39,7 @@ const ErrorToast: React.FC<ErrorToastProps> = ({ isVisible, message, onHide }) =
 
   return (
     <div
-      className={`fixed left-4 right-4 z-[30] flex items-center gap-3 rounded-md border px-4 py-3 shadow-lg error-toast ${isExiting ? 'error-toast--exiting' : ''}`}
+      className={`fixed left-4 right-4 z-[30] flex items-center gap-3 rounded-md border px-4 py-3 error-toast ${isExiting ? 'error-toast--exiting' : ''}`}
       style={{
         bottom: 96,
         background: 'rgba(255,59,48,0.15)',

@@ -33,9 +33,9 @@ const Header: React.FC<HeaderProps> = ({
     >
       <div className="flex items-center gap-2.5">
         {!title ? (
-          <span className="font-semibold text-base text-white tracking-tight">Ethos</span>
+          <span className="font-semibold text-base text-[var(--text-primary)] tracking-tight">Ethos</span>
         ) : (
-          <span className="font-semibold text-lg text-white tracking-tight">{title}</span>
+          <span className="font-semibold text-lg text-[var(--text-primary)] tracking-tight">{title}</span>
         )}
       </div>
       <button
@@ -43,7 +43,7 @@ const Header: React.FC<HeaderProps> = ({
         onClick={onOpenWallet}
         className={`flex items-center gap-2 rounded-[20px] py-1.5 px-3.5 text-[15px] font-semibold transition-colors border ${
           transparent
-            ? 'bg-white/10 text-white border-white/10 hover:bg-white/15'
+            ? 'bg-white/10 text-[var(--text-primary)] border-white/10 hover:bg-white/15'
             : 'text-[var(--accent)] border-[rgba(0,145,255,0.2)] hover:border-[rgba(0,145,255,0.3)]'
         }`}
         style={

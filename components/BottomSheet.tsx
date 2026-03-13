@@ -105,7 +105,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
         <div className="flex items-center justify-between px-5 pt-0 pb-4 border-b border-tg-border-subtle flex-shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             {headerLeft}
-            <h2 id="bottom-sheet-title" className="text-[20px] font-bold text-white truncate">
+            <h2 id="bottom-sheet-title" className="text-[20px] font-bold text-[var(--text-primary)] truncate">
               {title}
             </h2>
           </div>

@@ -88,7 +88,7 @@ const CreateListing: React.FC<CreateListingProps> = ({ onPublish }) => {
                 <button 
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setImage(null); }}
-                  className="absolute top-2 right-2 bg-black/70 p-1.5 rounded-full hover:bg-black/90 text-white"
+                  className="absolute top-2 right-2 bg-black/70 p-1.5 rounded-full hover:bg-black/90 text-[var(--text-primary)]"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -117,7 +117,7 @@ const CreateListing: React.FC<CreateListingProps> = ({ onPublish }) => {
              value={title}
              onChange={(e) => setTitle(e.target.value)}
              placeholder="Например: @username или Digital Art #1"
-             className="w-full bg-tg-card border border-transparent focus:border-blue-500 rounded-xl px-4 py-3 text-white placeholder-gray-500 outline-none transition-all"
+             className="w-full bg-tg-card border border-transparent focus:border-[var(--accent)] rounded-xl px-4 py-3 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none transition-all"
            />
         </div>
 
@@ -140,7 +140,7 @@ const CreateListing: React.FC<CreateListingProps> = ({ onPublish }) => {
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
                 placeholder="Расскажите о вашем NFT..."
-                className="w-full bg-tg-card border border-transparent focus:border-blue-500 rounded-xl px-4 py-3 text-white placeholder-gray-500 outline-none transition-all resize-none"
+                className="w-full bg-tg-card border border-transparent focus:border-[var(--accent)] rounded-xl px-4 py-3 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none transition-all resize-none"
             />
         </div>
 
@@ -154,7 +154,7 @@ const CreateListing: React.FC<CreateListingProps> = ({ onPublish }) => {
              placeholder="0.00"
              step="0.1"
              min="0"
-             className="w-full bg-tg-card border border-transparent focus:border-blue-500 rounded-xl px-4 py-3 text-white placeholder-gray-500 outline-none transition-all"
+             className="w-full bg-tg-card border border-transparent focus:border-[var(--accent)] rounded-xl px-4 py-3 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none transition-all"
            />
         </div>
 

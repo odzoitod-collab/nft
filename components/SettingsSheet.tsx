@@ -218,7 +218,7 @@ const SettingsItem: React.FC<SettingsItemProps> = ({ icon, label, color, onClick
         className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors group border-b border-white/5 last:border-0"
     >
         <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center text-white shadow-lg`}>
+            <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center text-[var(--text-primary)]`}>
                 {icon}
             </div>
             <span className="text-[15px] font-medium text-white">{label}</span>

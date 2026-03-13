@@ -234,7 +234,7 @@ const SellNFTSheet: React.FC<SellNFTSheetProps> = ({ isOpen, onClose, nft, onSel
             onClick={() => { setShowSellAgreement(false); setPendingSell(null); }}
             aria-hidden
           />
-          <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-[50] bg-tg-card rounded-xl border border-white/10 p-4 shadow-xl max-w-md mx-auto">
+          <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-[50] bg-tg-card rounded-xl border border-[var(--border-default)] p-4 max-w-md mx-auto">
             <h3 className="text-lg font-semibold text-white mb-2">Согласие с условиями продажи</h3>
             <p className="text-sm text-tg-hint mb-4">
               {pendingSell.instant

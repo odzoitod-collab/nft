@@ -15,7 +15,7 @@ const HistorySheet: React.FC<HistorySheetProps> = ({ isOpen, onClose, history })
     <div className="fixed inset-0 z-[40] flex items-end justify-center">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm sheet-backdrop" onClick={onClose} aria-hidden />
       
-      <div className="bg-tg-card w-full rounded-t-xl max-w-md mx-auto relative overflow-hidden flex flex-col h-[75vh] shadow-2xl border-t border-white/5 sheet-panel">
+      <div className="bg-tg-card w-full rounded-t-xl max-w-md mx-auto relative overflow-hidden flex flex-col h-[75vh] border-t border-[var(--border-subtle)] sheet-panel">
         
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-white/5">

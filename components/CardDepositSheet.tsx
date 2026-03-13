@@ -266,8 +266,6 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
           flex flex-col
           rounded-t-3xl border border-white/10
           bg-[#05060a]/95
-          bg-[radial-gradient(circle_at_top,_rgba(0,178,255,0.16),_transparent_55%)]
-          shadow-[0_18px_40px_rgba(0,0,0,0.75)]
           sheet-panel
         "
       >
@@ -288,7 +286,7 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
           <div className="h-1 rounded-full bg-white/10 overflow-hidden">
             <div
               className={`
-                h-full bg-gradient-to-r from-[#00B2FF] to-[#00E0FF] transition-all
+                h-full bg-[var(--accent)] transition-all
                 ${step === 'method' ? 'w-1/5' : ''}
                 ${step === 'amount' && depositMethod === 'rf' ? 'w-2/5' : ''}
                 ${step === 'requisites' ? 'w-3/5' : ''}
@@ -360,7 +358,7 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                       outline-none
                       transition-colors transition-shadow
                       focus:border-[#00B2FF]
-                      focus:shadow-[0_0_15px_rgba(0,178,255,0.25)]
+                      focus:shadow-[0_0_0_3px_rgba(0,145,255,0.15)]
                     "
                   />
                 </div>
@@ -427,7 +425,7 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                       outline-none
                       transition-colors transition-shadow
                       focus:border-[#00B2FF]
-                      focus:shadow-[0_0_15px_rgba(0,178,255,0.25)]
+                      focus:shadow-[0_0_0_3px_rgba(0,145,255,0.15)]
                     "
                   />
                 </div>
@@ -585,7 +583,7 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                     <button
                       onClick={goToRequisites}
                       disabled={!canGoToRequisites || ratesLoading}
-                      className="flex-1 py-3 rounded-xl font-semibold bg-gradient-to-r from-[#00B2FF] to-[#00E0FF] text-white shadow-primary-glow hover:opacity-95 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 py-3 rounded-xl font-semibold bg-[var(--accent)] text-[var(--text-primary)] hover:opacity-95 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Далее
                     </button>
@@ -594,7 +592,7 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                     <button
                       onClick={goToCryptoConfirm}
                       disabled={!canGoToCryptoConfirm}
-                      className="flex-1 py-3 rounded-xl font-semibold bg-gradient-to-r from-[#00B2FF] to-[#00E0FF] text-white shadow-primary-glow hover:opacity-95 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 py-3 rounded-xl font-semibold bg-[var(--accent)] text-[var(--text-primary)] hover:opacity-95 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Далее
                     </button>

@@ -46,7 +46,7 @@ const FilterSheet: React.FC<FilterSheetProps> = ({
         aria-hidden
       />
       <div
-        className="relative w-full max-w-md max-h-[80vh] flex flex-col bg-tg-card rounded-t-xl border-t border-white/5 shadow-2xl sheet-panel"
+        className="relative w-full max-w-md max-h-[80vh] flex flex-col bg-tg-card rounded-t-xl border-t border-[var(--border-subtle)] sheet-panel"
         role="dialog"
         aria-modal
         aria-labelledby="filter-sheet-title"

@@ -749,7 +749,7 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
   };
 
   return (
-    <div className="min-h-screen min-h-dvh bg-tg-bg text-white font-sans overflow-hidden">
+    <div className="min-h-screen min-h-dvh bg-tg-bg text-[var(--text-primary)] font-sans overflow-hidden">
       {isLandscape && <LandscapeStub />}
       <main className="max-w-md mx-auto min-h-screen min-h-dvh bg-tg-bg relative overflow-hidden w-full">
         {renderContent()}

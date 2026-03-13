@@ -164,7 +164,7 @@ const NFTDetail: React.FC<NFTDetailProps> = ({
       {showBuyAgreement && (
         <>
           <div className="fixed inset-0 bg-black/60 z-[40]" onClick={() => setShowBuyAgreement(false)} aria-hidden />
-          <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-[50] bg-tg-card rounded-lg border border-tg-border-default p-4 shadow-xl max-w-md mx-auto">
+          <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-[50] bg-tg-card rounded-lg border border-tg-border-default p-4 max-w-md mx-auto">
             <h3 className="text-lg font-semibold text-white mb-2">Согласие с условиями покупки</h3>
             <p className="text-sm text-tg-hint mb-4">
               Нажимая «Я согласен», вы подтверждаете покупку NFT «{nft.title}» за {nft.price} TON. Средства будут списаны с баланса, NFT поступит в ваш портфель. Отмена после списания невозможна.

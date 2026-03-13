@@ -30,7 +30,7 @@ const SeasonCompetitionSheet: React.FC<SeasonCompetitionSheetProps> = ({
   return (
     <div className="fixed inset-0 z-[40] flex items-end justify-center">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm sheet-backdrop" onClick={onClose} aria-hidden />
-      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-tg-card rounded-t-xl border-t border-white/5 shadow-2xl sheet-panel">
+      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-tg-card rounded-t-xl border-t border-[var(--border-subtle)] sheet-panel">
         <div className="p-4 border-b border-white/5 flex items-center justify-between sticky top-0 bg-tg-card z-10">
           <h2 className="text-lg font-semibold text-white">Условия участия</h2>
           <button
