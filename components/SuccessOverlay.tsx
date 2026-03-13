@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Check } from 'lucide-react';
+import { haptic } from '../services/telegramWebApp';
 
 interface SuccessOverlayProps {
   isVisible: boolean;
@@ -11,7 +12,8 @@ interface SuccessOverlayProps {
 const SuccessOverlay: React.FC<SuccessOverlayProps> = ({ isVisible, onHide, message }) => {
   useEffect(() => {
     if (!isVisible) return;
-    const t = setTimeout(onHide, 1800);
+    haptic.success();
+    const t = setTimeout(onHide, 2000);
     return () => clearTimeout(t);
   }, [isVisible, onHide]);
 
@@ -19,7 +21,7 @@ const SuccessOverlay: React.FC<SuccessOverlayProps> = ({ isVisible, onHide, mess
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm success-overlay"
       aria-live="polite"
       role="status"
     >
@@ -27,7 +29,7 @@ const SuccessOverlay: React.FC<SuccessOverlayProps> = ({ isVisible, onHide, mess
         <Check className="success-checkmark-icon" strokeWidth={3} />
       </div>
       {message && (
-        <p className="mt-4 text-white font-medium text-center px-4 max-w-[280px] animate-fade-in">
+        <p className="mt-4 text-white font-medium text-center px-4 max-w-[280px] success-overlay-text">
           {message}
         </p>
       )}

@@ -16,9 +16,20 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 h-14 px-4 flex items-center justify-between transition-colors ${
-        transparent ? 'bg-transparent' : 'bg-tg-bg/90 backdrop-blur-md border-b border-white/5'
+      className={`sticky top-0 z-[10] h-14 px-4 flex items-center justify-between transition-colors pt-safe-top ${
+        transparent
+          ? 'bg-transparent'
+          : 'border-b border-[var(--border-subtle)]'
       }`}
+      style={
+        transparent
+          ? undefined
+          : {
+              background: 'rgba(10,10,11,0.85)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            }
+      }
     >
       <div className="flex items-center gap-2.5">
         {!title ? (
@@ -30,13 +41,18 @@ const Header: React.FC<HeaderProps> = ({
       <button
         type="button"
         onClick={onOpenWallet}
-        className={`flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium transition-colors border ${
+        className={`flex items-center gap-2 rounded-[20px] py-1.5 px-3.5 text-[15px] font-semibold transition-colors border ${
           transparent
             ? 'bg-white/10 text-white border-white/10 hover:bg-white/15'
-            : 'bg-tg-card text-white border-white/5 hover:border-white/10 hover:bg-tg-elevated'
+            : 'text-[var(--accent)] border-[rgba(0,145,255,0.2)] hover:border-[rgba(0,145,255,0.3)]'
         }`}
+        style={
+          transparent
+            ? undefined
+            : { background: 'rgba(0,145,255,0.1)' }
+        }
       >
-        <Gem className="w-3.5 h-3.5 text-tg-button" />
+        <Gem className="w-4 h-4 shrink-0" aria-hidden />
         <span>{typeof balance === 'number' ? balance.toFixed(2) : balance}</span>
       </button>
     </header>

@@ -2,34 +2,35 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import Preloader from './components/Preloader';
+import { initTelegram, getTelegramUser } from './services/telegramWebApp';
 
-// Инициализация Telegram Web App
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: any;
-    };
-  }
-}
+const PRELOADER_FADE_MS = 300;
+const PRELOADER_UNMOUNT_MS = 500;
+
+// Инициализация TG Mini App: ready, expand, цвета, вертикальные свайпы
+initTelegram();
+const telegramUser = getTelegramUser();
 
 function Root() {
   const [showPreloader, setShowPreloader] = useState(true);
+  const [preloaderHiding, setPreloaderHiding] = useState(false);
 
   useEffect(() => {
-    const hidePreloader = () => {
-      setTimeout(() => setShowPreloader(false), 1200);
+    const onLoad = () => {
+      setPreloaderHiding(true);
+      setTimeout(() => setShowPreloader(false), PRELOADER_FADE_MS + PRELOADER_UNMOUNT_MS);
     };
     if (document.readyState === 'complete') {
-      hidePreloader();
+      onLoad();
     } else {
-      window.addEventListener('load', hidePreloader);
-      return () => window.removeEventListener('load', hidePreloader);
+      window.addEventListener('load', onLoad);
+      return () => window.removeEventListener('load', onLoad);
     }
   }, []);
 
   return (
     <>
-      <Preloader visible={showPreloader} />
+      {showPreloader && <Preloader visible={showPreloader} hiding={preloaderHiding} />}
       <App telegramUser={telegramUser} />
     </>
   );
@@ -38,14 +39,6 @@ function Root() {
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
-}
-
-// Получаем данные пользователя из Telegram
-let telegramUser = null;
-if (window.Telegram?.WebApp) {
-  const tg = window.Telegram.WebApp;
-  tg.ready();
-  telegramUser = tg.initDataUnsafe?.user;
 }
 
 const root = ReactDOM.createRoot(rootElement);

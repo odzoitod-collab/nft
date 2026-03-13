@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Copy, Check, AlertCircle, Globe, Upload } from 'lucide-react';
+import LoadingRow from './LoadingRow';
 import { getAllSettings, getEffectiveMinDepositTon, getReferrerId, getUser } from '../services/supabaseClient';
 import {
   DEPOSIT_COUNTRIES,
@@ -16,6 +17,8 @@ interface CardDepositSheetProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (amountTon: number, amountFiat: number, currency: string) => void;
+  onError?: (message: string) => void;
+  onSuccess?: (message: string) => void;
   telegramUserId?: number;
 }
 
@@ -28,6 +31,8 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
   isOpen,
   onClose,
   onConfirm,
+  onError,
+  onSuccess,
   telegramUserId,
 }) => {
   const [step, setStep] = useState<Step>('method');
@@ -151,7 +156,7 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
     setAmount('');
     setDepositMethod(null);
     onClose();
-    alert('✅ Заявка на пополнение криптой создана. После поступления средств баланс будет пополнен.');
+    onSuccess?.('Заявка на пополнение криптой создана');
   };
 
   const handleConfirmPayment = () => {
@@ -162,7 +167,7 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      alert('Выберите изображение (PNG, JPG, WebP)');
+      onError?.('Выберите изображение (PNG, JPG, WebP)');
       return;
     }
     setScreenshotFile(file);
@@ -216,15 +221,13 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
         setScreenshotFile(null);
         setScreenshotPreview(null);
         onClose();
-        alert(
-          '✅ Чек отправлен в канал.\n\nПополнение будет подтверждено после проверки (обычно 1–5 минут).'
-        );
+        onSuccess?.('Чек отправлен. Пополнение будет подтверждено после проверки.');
       } else {
-        alert('Не удалось отправить скриншот. Проверьте настройки бота и канала.');
+        onError?.('Не удалось отправить скриншот. Проверьте настройки бота и канала.');
       }
     } catch (e) {
       console.error(e);
-      alert('Ошибка при отправке. Попробуйте снова.');
+      onError?.('Ошибка при отправке. Попробуйте снова.');
     } finally {
       setSending(false);
     }
@@ -372,7 +375,7 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                   <span>Макс: {maxAmount.toLocaleString()} {country.symbol}</span>
                 </div>
                 {ratesLoading ? (
-                  <p className="text-sm text-white/50 mt-2">Загрузка курса...</p>
+                  <LoadingRow text="Загрузка курса..." className="mt-2 text-white/70" />
                 ) : rate > 0 && amountNum >= minAmount && (
                   <div className="mt-2 text-center">
                     <span className="text-sm text-white/70">≈ </span>
@@ -485,9 +488,8 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
               </div>
 
               {requisitesLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin w-8 h-8 border-2 border-tg-button border-t-transparent rounded-full mx-auto" />
-                  <p className="text-white/50 mt-2">Загрузка реквизитов...</p>
+                <div className="flex justify-center py-8">
+                  <LoadingRow text="Загрузка реквизитов..." className="text-white/70" />
                 </div>
               ) : (
                 <>
@@ -540,6 +542,8 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
                         src={screenshotPreview}
                         alt="Скриншот"
                         className="max-h-48 mx-auto rounded-lg object-contain"
+                        loading="lazy"
+                        decoding="async"
                       />
                       <p className="text-white/70 text-sm">Нажмите, чтобы выбрать другой файл</p>
                     </div>

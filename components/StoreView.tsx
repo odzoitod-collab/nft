@@ -1,8 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Send, Coins } from 'lucide-react';
+import { Search, Coins } from 'lucide-react';
 import { NFT } from '../types';
 import NFTCard from './NFTCard';
 import Header from './Header';
+import Input from './Input';
+import { NFTSkeletonGrid } from './Skeleton';
+import EmptyState from './EmptyState';
 
 /** Иконка Telegram для TG NFT */
 const TelegramIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -35,6 +38,7 @@ interface StoreViewProps {
   userBalance?: number;
   onOpenWallet: () => void;
   marketListSeed: number;
+  catalogLoading?: boolean;
 }
 
 /** Генератор псевдослучайных чисел по seed */
@@ -51,6 +55,7 @@ const StoreView: React.FC<StoreViewProps> = ({
   userBalance,
   onOpenWallet,
   marketListSeed,
+  catalogLoading = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [priceMin, setPriceMin] = useState<string>('');
@@ -101,113 +106,112 @@ const StoreView: React.FC<StoreViewProps> = ({
   };
 
   return (
-    <div className="pb-24 animate-fade-in pt-14 bg-tg-bg min-h-screen">
-      <Header balance={userBalance} onOpenWallet={onOpenWallet} />
+    <div className="animate-fade-in min-h-screen bg-tg-bg">
+      <div className="screen-content">
+        <Header balance={userBalance} onOpenWallet={onOpenWallet} />
 
-      {/* TG NFT / Crypto NFT */}
-      <div className="px-4 pt-2 pb-3">
-        <div className="flex gap-1 p-1 rounded-xl bg-tg-card border border-white/5">
-          <button
-            type="button"
-            onClick={() => setMarketCategory('tg')}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-              marketCategory === 'tg'
-                ? 'bg-tg-button text-white shadow-sm'
-                : 'text-tg-hint hover:text-white/80 hover:bg-white/5'
-            }`}
+        {/* Pill: TG NFT / Крипто NFT */}
+        <div className="px-4 pt-2 pb-3">
+          <div
+            className="flex gap-0 p-1 rounded-[var(--radius-lg)]"
+            style={{ background: 'var(--bg-raised)' }}
           >
-            <TelegramIcon className="w-4 h-4" />
-            TG NFT
-          </button>
-          <button
-            type="button"
-            onClick={() => setMarketCategory('crypto')}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-              marketCategory === 'crypto'
-                ? 'bg-tg-button text-white shadow-sm'
-                : 'text-tg-hint hover:text-white/80 hover:bg-white/5'
-            }`}
-          >
-            <CoinsIcon className="w-4 h-4" />
-            Крипто NFT
-          </button>
+            <button
+              type="button"
+              onClick={() => setMarketCategory('tg')}
+              className={`flex-1 py-2 px-4 rounded-[var(--radius-md)] text-[15px] font-medium flex items-center justify-center gap-2 transition-all duration-200 ${
+                marketCategory === 'tg'
+                  ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[0_1px_3px_rgba(0,0,0,0.3)]'
+                  : 'text-[var(--text-secondary)]'
+              }`}
+              style={{ transitionTimingFunction: 'var(--ease-spring)' }}
+            >
+              <TelegramIcon className="w-4 h-4" />
+              TG NFT
+            </button>
+            <button
+              type="button"
+              onClick={() => setMarketCategory('crypto')}
+              className={`flex-1 py-2 px-4 rounded-[var(--radius-md)] text-[15px] font-medium flex items-center justify-center gap-2 transition-all duration-200 ${
+                marketCategory === 'crypto'
+                  ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[0_1px_3px_rgba(0,0,0,0.3)]'
+                  : 'text-[var(--text-secondary)]'
+              }`}
+              style={{ transitionTimingFunction: 'var(--ease-spring)' }}
+            >
+              <CoinsIcon className="w-4 h-4" />
+              Крипто NFT
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Search */}
-      <div className="px-4 pt-2 pb-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tg-hint pointer-events-none" />
+        {/* Search */}
+        <div className="px-4 pt-2 pb-3">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)] pointer-events-none" />
+            <Input
+              type="text"
+              placeholder="Поиск"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
+        {/* Price filter */}
+        <div className="px-4 pb-4 flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-[var(--text-secondary)]">Цена, TON:</span>
           <input
             type="text"
-            placeholder="Поиск"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 pl-9 pr-3 rounded-lg bg-tg-card border border-white/5 text-sm text-white placeholder-tg-hint outline-none focus:border-white/10 transition-colors"
+            inputMode="decimal"
+            placeholder="от"
+            value={priceMin}
+            onChange={(e) => setPriceMin(e.target.value)}
+            className="w-20 h-9 px-3 rounded-[var(--radius-md)] bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[17px] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(0,145,255,0.15)] transition-[border-color,box-shadow] duration-150"
           />
+          <span className="text-[var(--text-secondary)]">—</span>
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="до"
+            value={priceMax}
+            onChange={(e) => setPriceMax(e.target.value)}
+            className="w-20 h-9 px-3 rounded-[var(--radius-md)] bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[17px] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(0,145,255,0.15)] transition-[border-color,box-shadow] duration-150"
+          />
+          {hasPriceFilter && (
+            <button
+              onClick={clearPriceFilter}
+              className="flex-shrink-0 min-touch px-3 py-2 rounded-[var(--radius-md)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-colors"
+            >
+              Сбросить цену
+            </button>
+          )}
         </div>
-      </div>
-
-      {/* Price filter */}
-      <div className="px-4 pb-4 flex items-center gap-2 flex-wrap">
-        <span className="text-sm text-tg-hint">Цена, TON:</span>
-        <input
-          type="text"
-          inputMode="decimal"
-          placeholder="от"
-          value={priceMin}
-          onChange={(e) => setPriceMin(e.target.value)}
-          className="w-20 h-9 px-2 rounded-lg bg-tg-card border border-white/5 text-sm text-white placeholder-tg-hint outline-none focus:border-white/10"
-        />
-        <span className="text-tg-hint">—</span>
-        <input
-          type="text"
-          inputMode="decimal"
-          placeholder="до"
-          value={priceMax}
-          onChange={(e) => setPriceMax(e.target.value)}
-          className="w-20 h-9 px-2 rounded-lg bg-tg-card border border-white/5 text-sm text-white placeholder-tg-hint outline-none focus:border-white/10"
-        />
-        {hasPriceFilter && (
-          <button
-            onClick={clearPriceFilter}
-            className="flex-shrink-0 px-3 py-2 h-9 rounded-lg text-xs font-medium text-tg-hint hover:text-white border border-white/5 hover:border-white/10 transition-colors"
-          >
-            Сбросить цену
-          </button>
-        )}
-      </div>
 
       {/* Grid */}
-      <div className="px-4 min-h-[200px]">
-        {displayList.length > 0 ? (
+      <div className="p-4 min-h-[200px]">
+        {catalogLoading ? (
+          <NFTSkeletonGrid />
+        ) : displayList.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 animate-in-stagger">
             {displayList.map(({ nft, key }) => (
               <NFTCard key={key} nft={nft} onClick={onNftClick} />
             ))}
           </div>
         ) : (
-          <EmptyState onReset={clearAll} categoryLabel={marketCategory === 'tg' ? 'TG NFT' : 'Крипто NFT'} />
+          <EmptyState
+            icon={<SearchIconAnimated className="w-12 h-12" />}
+            title="Ничего не найдено"
+            subtitle={`В категории «${marketCategory === 'tg' ? 'TG NFT' : 'Крипто NFT'}» пока нет или измените поиск и фильтр`}
+            ctaLabel="Сбросить"
+            onCtaClick={clearAll}
+          />
         )}
+        </div>
       </div>
     </div>
   );
 };
-
-const EmptyState: React.FC<{ onReset: () => void; categoryLabel: string }> = ({ onReset, categoryLabel }) => (
-  <div className="flex flex-col items-center justify-center py-16 text-center">
-    <div className="svg-icon-pulse w-14 h-14 rounded-2xl bg-tg-card border border-white/5 flex items-center justify-center mb-4">
-      <SearchIconAnimated className="w-7 h-7 text-tg-button" />
-    </div>
-    <p className="text-sm font-medium text-white/90">Ничего не найдено</p>
-    <p className="text-xs text-tg-hint mt-1">В категории «{categoryLabel}» пока нет или измените поиск и фильтр</p>
-    <button
-      onClick={onReset}
-      className="mt-5 px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-tg-button/90 hover:bg-tg-button transition-colors svg-btn-press"
-    >
-      Сбросить
-    </button>
-  </div>
-);
 
 export default StoreView;

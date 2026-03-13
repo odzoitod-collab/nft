@@ -84,7 +84,7 @@ const CreateListing: React.FC<CreateListingProps> = ({ onPublish }) => {
           >
             {image ? (
               <>
-                <img src={image} alt="Preview" className="h-full w-full object-contain" />
+                <img src={image} alt="Preview" className="h-full w-full object-contain" loading="lazy" decoding="async" />
                 <button 
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setImage(null); }}

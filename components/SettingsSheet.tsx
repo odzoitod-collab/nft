@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Shield, HelpCircle, Bell, ChevronRight, ChevronLeft, ToggleLeft, ToggleRight, ExternalLink } from 'lucide-react';
+import { Shield, HelpCircle, Bell, ChevronRight, ChevronLeft, ToggleLeft, ToggleRight, ExternalLink } from 'lucide-react';
 import { getSupportUsername, getBotUsername } from '../services/supabaseClient';
+import BottomSheet from './BottomSheet';
 
 interface SettingsSheetProps {
   isOpen: boolean;
@@ -36,43 +37,43 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ isOpen, onClose }) => {
 
   const supportLink = supportUsername.replace(/^@/, '');
 
-  if (!isOpen) return null;
-
-  const handleBack = () => {
-    setCurrentTab('main');
-  };
+  const handleBack = () => setCurrentTab('main');
 
   const handleClose = () => {
     onClose();
-    setTimeout(() => setCurrentTab('main'), 300); // Reset after animation
+    setTimeout(() => setCurrentTab('main'), 380);
   };
 
-  return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm sheet-backdrop" onClick={handleClose} aria-hidden />
-      <div className="bg-tg-card w-full rounded-t-xl max-w-md mx-auto relative overflow-hidden flex flex-col h-[70vh] border-t border-white/5 shadow-2xl sheet-panel">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-white/5">
-            <div className="flex items-center gap-2">
-                {currentTab !== 'main' && (
-                    <button onClick={handleBack} className="mr-2 text-tg-hint hover:text-white transition-colors">
-                        <ChevronLeft className="w-6 h-6" />
-                    </button>
-                )}
-                <h2 className="text-xl font-bold text-white tracking-tight">
-                    {currentTab === 'main' ? 'Настройки' :
-                     currentTab === 'notifications' ? 'Уведомления' :
-                     currentTab === 'privacy' ? 'Конфиденциальность' : 'Помощь'}
-                </h2>
-            </div>
-            <button onClick={handleClose} className="bg-white/10 rounded-full p-1.5 text-tg-hint hover:text-white transition-colors">
-                <X className="w-5 h-5" />
-            </button>
-        </div>
+  const titleByTab = {
+    main: 'Настройки',
+    notifications: 'Уведомления',
+    privacy: 'Конфиденциальность',
+    help: 'Помощь',
+  };
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto no-scrollbar p-4 relative">
+  if (!isOpen) return null;
+
+  return (
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={titleByTab[currentTab]}
+      size="medium"
+      zIndex={70}
+      headerLeft={
+        currentTab !== 'main' ? (
+          <button
+            type="button"
+            onClick={handleBack}
+            className="mr-2 w-8 h-8 flex items-center justify-center rounded-full text-tg-hint hover:text-white hover:bg-white/5 transition-colors flex-shrink-0"
+            aria-label="Назад"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        ) : undefined
+      }
+    >
+      <div className="no-scrollbar relative">
             
             {/* Main Menu */}
             {currentTab === 'main' && (
@@ -193,15 +194,14 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ isOpen, onClose }) => {
                             </div>
                         </div>
                     </div>
-                    <p className="text-xs text-tg-hint px-4 leading-relaxed">
+                    <p className="text-[13px] text-tg-hint leading-relaxed">
                         Если вы столкнулись с мошенничеством или технической ошибкой, пожалуйста, свяжитесь с нашей службой поддержки немедленно.
                     </p>
                 </div>
             )}
 
-        </div>
       </div>
-    </div>
+    </BottomSheet>
   );
 };
 

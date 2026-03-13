@@ -10,10 +10,11 @@ import {
   ShieldCheck,
   ArrowDownLeft,
   ArrowUpRight,
-  Loader2,
   ImageIcon,
 } from 'lucide-react';
 import { getUserTransactions, getNftCatalog, getVerificationStatus } from '../services/supabaseClient';
+import { HistorySkeletonList } from './Skeleton';
+import EmptyState from './EmptyState';
 import type { DbTransaction } from '../services/supabaseClient';
 import type { DbNftCatalogItem } from '../services/supabaseClient';
 
@@ -106,11 +107,12 @@ const ProfileView: React.FC<ProfileViewProps> = ({
   }, [telegramUserId]);
 
   return (
-    <div className="pb-24 animate-fade-in min-h-screen bg-tg-bg">
-      <div className="pt-14 px-4">
+    <div className="animate-fade-in min-h-screen bg-tg-bg">
+      <div className="screen-content">
+        <div className="px-4">
         <div className="flex flex-col items-center pt-6 pb-6">
           <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/10 bg-tg-card">
-            <img src={user?.avatar} alt="" className="w-full h-full object-cover" />
+            <img src={user?.avatar} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
           </div>
           <h1 className="mt-4 text-xl font-semibold text-white tracking-tight">
             {user?.username}
@@ -216,18 +218,19 @@ const ProfileView: React.FC<ProfileViewProps> = ({
               Покупки NFT
             </h2>
             {loading ? (
-              <div className="flex items-center justify-center py-8 rounded-xl bg-tg-card border border-white/5">
-                <Loader2 className="w-6 h-6 text-tg-button animate-spin" />
-              </div>
+              <HistorySkeletonList />
             ) : !telegramUserId ? (
-              <div className="py-6 px-4 rounded-xl bg-tg-card border border-white/5 text-center">
-                <p className="text-sm text-tg-hint">Войдите через Telegram, чтобы видеть историю</p>
-              </div>
+              <EmptyState
+                icon={<ShoppingBag className="w-12 h-12" />}
+                title="Войдите через Telegram"
+                subtitle="Чтобы видеть историю покупок"
+              />
             ) : purchases.length === 0 ? (
-              <div className="py-6 px-4 rounded-xl bg-tg-card border border-white/5 text-center">
-                <ShoppingBag className="w-8 h-8 text-tg-hint mx-auto mb-2 opacity-60" />
-                <p className="text-sm text-tg-hint">Покупок пока нет</p>
-              </div>
+              <EmptyState
+                icon={<ShoppingBag className="w-12 h-12" />}
+                title="Покупок пока нет"
+                subtitle="Купленные NFT появятся здесь"
+              />
             ) : (
               <ul className="space-y-2 max-h-48 overflow-y-auto no-scrollbar">
                 {purchases.map((item) => (
@@ -237,7 +240,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                   >
                     <div className="w-11 h-11 rounded-lg overflow-hidden bg-tg-elevated border border-white/5 flex-shrink-0">
                       {item.image ? (
-                        <img src={item.image} alt="" className="w-full h-full object-cover" />
+                        <img src={item.image} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-tg-hint">
                           <ImageIcon className="w-5 h-5" />
@@ -263,18 +266,19 @@ const ProfileView: React.FC<ProfileViewProps> = ({
               Продажи NFT
             </h2>
             {loading ? (
-              <div className="flex items-center justify-center py-8 rounded-xl bg-tg-card border border-white/5">
-                <Loader2 className="w-6 h-6 text-tg-button animate-spin" />
-              </div>
+              <HistorySkeletonList />
             ) : !telegramUserId ? (
-              <div className="py-6 px-4 rounded-xl bg-tg-card border border-white/5 text-center">
-                <p className="text-sm text-tg-hint">Войдите через Telegram, чтобы видеть историю</p>
-              </div>
+              <EmptyState
+                icon={<Gift className="w-12 h-12" />}
+                title="Войдите через Telegram"
+                subtitle="Чтобы видеть историю продаж"
+              />
             ) : sales.length === 0 ? (
-              <div className="py-6 px-4 rounded-xl bg-tg-card border border-white/5 text-center">
-                <Gift className="w-8 h-8 text-tg-hint mx-auto mb-2 opacity-60" />
-                <p className="text-sm text-tg-hint">Продаж пока нет</p>
-              </div>
+              <EmptyState
+                icon={<Gift className="w-12 h-12" />}
+                title="Продаж пока нет"
+                subtitle="Проданные NFT появятся здесь"
+              />
             ) : (
               <ul className="space-y-2 max-h-48 overflow-y-auto no-scrollbar">
                 {sales.map((item) => (
@@ -284,7 +288,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                   >
                     <div className="w-11 h-11 rounded-lg overflow-hidden bg-tg-elevated border border-white/5 flex-shrink-0">
                       {item.image ? (
-                        <img src={item.image} alt="" className="w-full h-full object-cover" />
+                        <img src={item.image} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-tg-hint">
                           <ImageIcon className="w-5 h-5" />
@@ -306,6 +310,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
 
         <p className="mt-8 text-center text-xs text-tg-hint">Ethos Gallery · TON</p>
+        </div>
       </div>
     </div>
   );

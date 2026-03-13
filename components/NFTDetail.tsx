@@ -1,7 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { NFT } from '../types';
-import { X, ChevronRight, Gem, Check } from 'lucide-react';
+import { ChevronRight, Gem, Check } from 'lucide-react';
 import SellNFTSheet from './SellNFTSheet';
+import Button from './Button';
+import FullScreenView from './FullScreenView';
+import {
+  showBackButton,
+  hideBackButton,
+  onBackButtonClick,
+  setMainButtonText,
+  showMainButton,
+  hideMainButton,
+  setMainButtonParams,
+  onMainButtonClick,
+} from '../services/telegramWebApp';
 
 interface NFTDetailProps {
   nft: NFT;
@@ -11,6 +23,7 @@ interface NFTDetailProps {
   isOwner: boolean;
   onOpenWallet: () => void;
   onSellNFT?: (nft: NFT, price: number, instant: boolean) => void;
+  onError?: (message: string) => void;
 }
 
 const NFTDetail: React.FC<NFTDetailProps> = ({
@@ -21,58 +34,97 @@ const NFTDetail: React.FC<NFTDetailProps> = ({
   isOwner,
   onOpenWallet,
   onSellNFT,
+  onError,
 }) => {
   const canBuy = !isOwner && userBalance >= nft.price;
   const [isSellSheetOpen, setIsSellSheetOpen] = useState(false);
   const [showBuyAgreement, setShowBuyAgreement] = useState(false);
 
+  // TG BackButton: показываем на full-screen, дублируем нашу кнопку «Назад»
+  useEffect(() => {
+    showBackButton();
+    const off = onBackButtonClick(onBack);
+    return () => {
+      off();
+      hideBackButton();
+    };
+  }, [onBack]);
+
+  // TG MainButton: главный CTA на экране детали (опционально)
+  useEffect(() => {
+    if (!isOwner) {
+      const label = canBuy ? `Купить за ${nft.price} TON` : 'Пополнить';
+      setMainButtonText(label);
+      setMainButtonParams({ color: '#0091ff', text_color: '#ffffff' });
+      const off = onMainButtonClick(handleBuyClick);
+      showMainButton();
+      return () => {
+        off();
+        hideMainButton();
+      };
+    }
+    hideMainButton();
+    return () => {};
+  }, [isOwner, canBuy, nft.price, handleBuyClick]);
+
   const handleSell = (price: number, instant: boolean) => {
     onSellNFT?.(nft, price, instant);
   };
 
-  const handleBuyClick = () => {
+  const handleBuyClick = useCallback(() => {
     if (!canBuy) {
       onOpenWallet();
       return;
     }
     setShowBuyAgreement(true);
-  };
+  }, [canBuy, onOpenWallet]);
 
   const handleBuyConfirm = () => {
     setShowBuyAgreement(false);
     onBuy(nft);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-tg-bg flex flex-col overflow-y-auto sheet-panel-full">
-      {/* Top bar */}
-      <div className="sticky top-0 z-20 flex items-center justify-between p-4 bg-tg-bg/90 backdrop-blur-md border-b border-white/5">
-        <button
-          type="button"
-          onClick={onOpenWallet}
-          className="flex items-center gap-2 h-9 px-3 rounded-lg bg-tg-card border border-white/5 text-sm font-medium text-white"
+  const footer = (
+    <div className="flex gap-3 max-w-md mx-auto">
+      {isOwner && (
+        <Button variant="secondary" flexRatio={1} onClick={() => setIsSellSheetOpen(true)}>
+          Выставить
+        </Button>
+      )}
+      {isOwner ? (
+        <div className="flex-[2] h-[52px] rounded-md flex flex-col items-center justify-center bg-tg-button/10 border border-tg-button/20 text-tg-button text-[17px] font-semibold">
+          <span>Вы владелец</span>
+        </div>
+      ) : (
+        <Button
+          variant="primary"
+          onClick={handleBuyClick}
+          className="flex-1 flex flex-col items-center justify-center gap-0.5"
         >
-          <Gem className="w-3.5 h-3.5 text-tg-button" />
-          {userBalance.toFixed(2)}
-        </button>
-        <button
-          type="button"
-          onClick={onBack}
-          className="w-9 h-9 rounded-lg bg-tg-card border border-white/5 flex items-center justify-center text-tg-hint hover:text-white transition-colors"
-          aria-label="Назад"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
+          <span>{canBuy ? 'Купить' : 'Пополнить'}</span>
+          <span className="text-[13px] font-medium opacity-90">{nft.price} TON</span>
+        </Button>
+      )}
+    </div>
+  );
 
-      <div className="flex-1 px-4 pb-28">
+  return (
+    <FullScreenView
+      onBack={onBack}
+      balance={userBalance}
+      onBalanceClick={onOpenWallet}
+      footer={footer}
+    >
+      <div className="px-4 pb-6">
         {/* Image */}
         <div className="flex justify-center pt-6 pb-4">
           <div className="relative w-56 h-56 rounded-xl overflow-hidden border border-white/5 bg-tg-card">
             <img
               src={nft.image}
               alt={nft.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover aspect-square"
+              loading="lazy"
+              decoding="async"
             />
             {isOwner && (
               <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-md bg-tg-button/90 text-white text-xs font-medium">
@@ -108,63 +160,22 @@ const NFTDetail: React.FC<NFTDetailProps> = ({
         </div>
       </div>
 
-      {/* Bottom actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-tg-bg/95 backdrop-blur-md border-t border-white/5 pb-safe max-w-md mx-auto z-40">
-        <div className="flex gap-3">
-          {isOwner && (
-            <button
-              type="button"
-              onClick={() => setIsSellSheetOpen(true)}
-              className="flex-1 h-12 rounded-xl font-medium text-sm text-white bg-tg-card border border-white/5 hover:bg-tg-elevated transition-colors"
-            >
-              Выставить
-            </button>
-          )}
-          {isOwner ? (
-            <div className="flex-1 h-12 rounded-xl flex flex-col items-center justify-center bg-tg-button/10 border border-tg-button/20 text-tg-button text-sm font-medium">
-              <span>Вы владелец</span>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={handleBuyClick}
-              className={`flex-1 h-12 rounded-xl font-medium text-sm text-white transition-colors flex flex-col items-center justify-center ${
-                canBuy
-                  ? 'bg-tg-button hover:opacity-90'
-                  : 'bg-red-500/80 hover:bg-red-500'
-              }`}
-            >
-              <span>{canBuy ? 'Купить' : 'Пополнить'}</span>
-              <span className="text-xs opacity-80">{nft.price} TON</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Соглашение перед покупкой */}
+      {/* Соглашение перед покупкой — Ghost + Primary */}
       {showBuyAgreement && (
         <>
-          <div className="fixed inset-0 bg-black/60 z-[60]" onClick={() => setShowBuyAgreement(false)} aria-hidden />
-          <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-[61] bg-tg-card rounded-xl border border-white/10 p-4 shadow-xl max-w-md mx-auto">
+          <div className="fixed inset-0 bg-black/60 z-[40]" onClick={() => setShowBuyAgreement(false)} aria-hidden />
+          <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-[50] bg-tg-card rounded-lg border border-tg-border-default p-4 shadow-xl max-w-md mx-auto">
             <h3 className="text-lg font-semibold text-white mb-2">Согласие с условиями покупки</h3>
             <p className="text-sm text-tg-hint mb-4">
               Нажимая «Я согласен», вы подтверждаете покупку NFT «{nft.title}» за {nft.price} TON. Средства будут списаны с баланса, NFT поступит в ваш портфель. Отмена после списания невозможна.
             </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setShowBuyAgreement(false)}
-                className="flex-1 h-10 rounded-lg text-sm font-medium text-white border border-white/5 hover:bg-white/5"
-              >
+            <div className="flex flex-row gap-3">
+              <Button variant="ghost" flexRatio={1} onClick={() => setShowBuyAgreement(false)}>
                 Отмена
-              </button>
-              <button
-                type="button"
-                onClick={handleBuyConfirm}
-                className="flex-1 h-10 rounded-lg text-sm font-medium text-white bg-tg-button hover:opacity-90"
-              >
+              </Button>
+              <Button variant="primary" flexRatio={2} onClick={handleBuyConfirm}>
                 Я согласен
-              </button>
+              </Button>
             </div>
           </div>
         </>
@@ -175,8 +186,9 @@ const NFTDetail: React.FC<NFTDetailProps> = ({
         onClose={() => setIsSellSheetOpen(false)}
         nft={nft}
         onSell={handleSell}
+        onError={onError}
       />
-    </div>
+    </FullScreenView>
   );
 };
 

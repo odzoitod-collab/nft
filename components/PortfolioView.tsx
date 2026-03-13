@@ -3,6 +3,7 @@ import { Briefcase, Receipt } from 'lucide-react';
 import { NFT, Transaction } from '../types';
 import NFTCard from './NFTCard';
 import Header from './Header';
+import EmptyState from './EmptyState';
 
 type PortfolioTab = 'portfolio' | 'sold';
 
@@ -62,10 +63,11 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({
   }, [soldTransactions, catalogByCode]);
 
   return (
-    <div className="pb-24 animate-fade-in min-h-screen pt-14 bg-tg-bg">
-      <Header balance={userBalance} onOpenWallet={onOpenWallet} title="Портфель" />
+    <div className="animate-fade-in min-h-screen bg-tg-bg">
+      <div className="screen-content">
+        <Header balance={userBalance} onOpenWallet={onOpenWallet} title="Портфель" />
 
-      <div className="px-4 pt-4 pb-4">
+        <div className="px-4 pt-4 pb-4">
         <div className="flex gap-1 p-0.5 rounded-lg bg-tg-card border border-white/5 w-full">
           <TabButton
             active={tab === 'portfolio'}
@@ -83,25 +85,22 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({
       {tab === 'portfolio' && (
         <>
           {nfts.length > 0 ? (
-            <div className="px-4 grid grid-cols-2 gap-3">
+            <div className="p-4 grid grid-cols-2 gap-3">
               {nfts.map((nft, i) => (
                 <NFTCard
                   key={nft.rowId ?? `${nft.id}-${i}`}
                   nft={nft}
                   onClick={onNftClick}
+                  showOwnerBadge
                 />
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <div className="w-14 h-14 rounded-xl bg-tg-card border border-white/5 flex items-center justify-center mb-4">
-                <Briefcase className="w-6 h-6 text-tg-hint" />
-              </div>
-              <p className="text-sm font-medium text-white">Портфель пуст</p>
-              <p className="text-xs text-tg-hint mt-1 max-w-[220px]">
-                Купленные NFT появятся здесь.
-              </p>
-            </div>
+            <EmptyState
+              icon={<Briefcase className="w-12 h-12" />}
+              title="Портфель пуст"
+              subtitle="Купленные NFT появятся здесь"
+            />
           )}
         </>
       )}
@@ -109,7 +108,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({
       {tab === 'sold' && (
         <>
           {soldItems.length > 0 ? (
-            <div className="px-4 grid grid-cols-2 gap-3">
+            <div className="p-4 grid grid-cols-2 gap-3">
               {soldItems.map((item) => (
                 <div
                   key={`${item.id}-${item.date}`}
@@ -120,8 +119,9 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({
                       <img
                         src={item.image}
                         alt={item.nft_title}
-                        className="w-full h-full object-cover"
                         loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -142,18 +142,15 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <div className="w-14 h-14 rounded-xl bg-tg-card border border-white/5 flex items-center justify-center mb-4">
-                <Receipt className="w-6 h-6 text-tg-hint" />
-              </div>
-              <p className="text-sm font-medium text-white">Проданных нет</p>
-              <p className="text-xs text-tg-hint mt-1 max-w-[220px]">
-                Здесь появятся NFT, которые вы продали.
-              </p>
-            </div>
+            <EmptyState
+              icon={<Receipt className="w-12 h-12" />}
+              title="Проданных нет"
+              subtitle="Здесь появятся NFT, которые вы продали"
+            />
           )}
         </>
       )}
+      </div>
     </div>
   );
 };

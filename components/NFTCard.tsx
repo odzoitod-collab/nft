@@ -1,53 +1,64 @@
 import React from 'react';
 import { NFT } from '../types';
-import { Gem } from 'lucide-react';
 
 interface NFTCardProps {
   nft: NFT;
   onClick: (nft: NFT) => void;
+  /** Показывать бейдж «Владелец» (в портфеле) */
+  showOwnerBadge?: boolean;
 }
 
-const NFTCard: React.FC<NFTCardProps> = ({ nft, onClick }) => {
+const NFTCard: React.FC<NFTCardProps> = ({ nft, onClick, showOwnerBadge }) => {
   return (
     <button
       type="button"
-      className="w-full text-left bg-tg-card rounded-xl overflow-hidden border border-white/5 hover:border-white/10 transition-all active:scale-[0.99] flex flex-col h-full group"
+      className="nft-card min-touch w-full text-left flex flex-col h-full"
       onClick={() => onClick(nft)}
     >
-      <div className="aspect-square bg-tg-elevated relative overflow-hidden">
+      <div className="aspect-square w-full relative overflow-hidden bg-[var(--bg-raised)]">
         <img
           src={nft.image}
           alt={nft.title}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="w-full h-full object-cover aspect-square"
+          style={{ transitionTimingFunction: 'var(--ease-spring)' }}
           loading="lazy"
+          decoding="async"
         />
+        {showOwnerBadge && (
+          <span
+            className="absolute top-2 left-2 rounded-md px-2 py-0.5 text-[11px] font-semibold text-[var(--text-primary)]"
+            style={{ background: 'rgba(0,145,255,0.85)' }}
+          >
+            Владелец
+          </span>
+        )}
         {nft.verified && (
-          <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-tg-button flex items-center justify-center shadow-lg">
+          <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-tg-button flex items-center justify-center">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
         )}
       </div>
-      <div className="p-3 flex flex-col flex-1 min-h-0">
-        <h3 className="font-semibold text-white text-sm leading-tight truncate">
+      <div
+        className="flex flex-col flex-1 min-h-0"
+        style={{ padding: '10px 12px' }}
+      >
+        <h3 className="text-[14px] font-semibold text-[var(--text-primary)] leading-tight truncate">
           {nft.title}
         </h3>
-        <p className="text-tg-hint text-xs mt-0.5 truncate">
-          {nft.catalogId != null ? `ID: ${nft.catalogId}` : null}
-          {nft.catalogId != null && nft.code ? ' · ' : ''}
-          {nft.code ? `Код: ${nft.code}` : nft.subtitle || `#${nft.id}`}
+        <p className="text-[12px] text-[var(--text-secondary)] truncate mt-0.5">
+          {nft.collection || (nft.catalogId != null ? `ID: ${nft.catalogId}` : '') || nft.code || nft.subtitle || `#${nft.id}`}
         </p>
-        <div className="mt-auto pt-3 flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 font-semibold text-sm text-white">
-            <Gem className="w-3.5 h-3.5 text-tg-button" />
+        <div className="mt-auto pt-2 flex items-baseline gap-1">
+          <span className="text-[15px] font-bold text-[var(--text-primary)]">
             {nft.price}
           </span>
-          <span className="text-[10px] text-tg-hint font-medium">TON</span>
+          <span className="text-[13px] text-[var(--accent)] font-medium">TON</span>
         </div>
       </div>
     </button>
   );
 };
 
-export default NFTCard;
+export default React.memo(NFTCard);

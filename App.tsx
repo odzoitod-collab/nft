@@ -12,6 +12,8 @@ import CreateListing from './components/CreateListing';
 import CardDepositSheet from './components/CardDepositSheet';
 import WithdrawSheet from './components/WithdrawSheet';
 import SuccessOverlay from './components/SuccessOverlay';
+import ErrorToast from './components/ErrorToast';
+import LandscapeStub from './components/LandscapeStub';
 import { MOCK_USER } from './constants';
 import { NFT, ViewState, User, Transaction } from './types';
 import { 
@@ -57,6 +59,15 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
   const [view, setView] = useState<ViewState>(ViewState.STORE); // Стартовая страница — маркет
   const [selectedNft, setSelectedNft] = useState<NFT | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+  const [isLandscape, setIsLandscape] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(orientation: landscape)');
+    const handler = () => setIsLandscape(mq.matches);
+    handler();
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
   
   // Инициализируем пользователя данными из Telegram
   const initUser = (): User => {
@@ -83,10 +94,16 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
   /** Seed порядка NFT в маркете — один раз при загрузке сайта, не меняется при переключении вкладок */
   const [marketListSeed] = useState(() => Math.random());
   const [successOverlay, setSuccessOverlay] = useState<{ show: boolean; message?: string }>({ show: false });
+  const [errorToast, setErrorToast] = useState({ show: false, message: '' });
+  const [catalogLoading, setCatalogLoading] = useState(true);
+
+  const showError = (message: string) => setErrorToast({ show: true, message });
+  const hideError = () => setErrorToast({ show: false });
 
   // Загрузка каталога NFT из Supabase (маркет)
   useEffect(() => {
     const load = async () => {
+      setCatalogLoading(true);
       const items = await getNftCatalog();
       const referralPrices = telegramUser ? await getReferralNftPrices(telegramUser.id) : {};
       setNftCatalog(
@@ -109,6 +126,7 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
           nftType: c.nft_type === 'crypto' ? 'crypto' : 'tg',
         }))
       );
+      setCatalogLoading(false);
     };
     load();
   }, [telegramUser?.id]);
@@ -414,12 +432,12 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
           await addHistoryItem('deposit', 'Пополнение TON', amount);
         } else {
           console.error('Failed to update balance in Supabase');
-          alert('⚠️ Баланс обновлен локально, но возможны проблемы с синхронизацией');
+          showError('Баланс обновлен локально, но возможны проблемы с синхронизацией');
         }
       }
     } catch (error) {
       console.error('Error in handleDeposit:', error);
-      alert('❌ Ошибка при пополнении баланса');
+      showError('Ошибка при пополнении баланса');
       // Откатываем изменения
       setUser(prev => ({ ...prev, balance: user.balance }));
     }
@@ -427,7 +445,7 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
 
   const handleCardDeposit = async (amountTon: number, amountFiat: number, currency: string) => {
     if (!telegramUser) {
-      alert('❌ Ошибка: не удалось определить пользователя');
+      showError('Не удалось определить пользователя');
       return;
     }
 
@@ -440,19 +458,14 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
       );
 
       if (request) {
-        alert(
-          `✅ Заявка на пополнение отправлена!\n\n` +
-          `Сумма: ${amountTon.toFixed(2)} TON (${amountFiat.toLocaleString()} ${currency})\n\n` +
-          `Пополнение будет подтверждено после проверки платежа.\n\n` +
-          `Обычно это занимает 1-5 минут.`
-        );
+        setSuccessOverlay({ show: true, message: 'Заявка на пополнение отправлена' });
         console.log(`✅ Deposit request: ${amountTon} TON (${amountFiat} ${currency})`);
       } else {
-        alert('❌ Ошибка при создании заявки. Попробуйте снова.');
+        showError('Ошибка при создании заявки. Попробуйте снова.');
       }
     } catch (error) {
       console.error('Error in handleCardDeposit:', error);
-      alert('❌ Ошибка при создании заявки на пополнение.');
+      showError('Ошибка при создании заявки на пополнение.');
     }
   };
 
@@ -466,14 +479,14 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
   const handleBuy = async (nft: NFT) => {
       // Проверка баланса
       if (user.balance < nft.price) {
-          alert("❌ Недостаточно средств!\n\nТребуется: " + nft.price + " TON\nВаш баланс: " + user.balance.toFixed(2) + " TON\n\nПополните кошелек.");
+          showError(`Недостаточно средств. Требуется: ${nft.price} TON. Ваш баланс: ${user.balance.toFixed(2)} TON`);
           setIsWalletSheetOpen(true);
           return;
       }
 
       // Проверка что NFT еще не куплен
       if (nft.owner === user.address) {
-          alert("❌ Вы уже владеете этим NFT!");
+          showError('Вы уже владеете этим NFT');
           return;
       }
 
@@ -541,7 +554,7 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
           setSelectedNft(null);
       } catch (error) {
           console.error('Error in handleBuy:', error);
-          alert('❌ Ошибка при покупке. Попробуйте снова.');
+          showError('Ошибка при покупке. Попробуйте снова.');
           // Откатываем изменения
           setUser(prev => ({ 
               ...prev, 
@@ -553,34 +566,34 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
 
   const handleSellNFT = async (nft: NFT, price: number, instant: boolean) => {
     if (!telegramUser) {
-      alert('❌ Ошибка: не удалось определить пользователя');
+      showError('Не удалось определить пользователя');
       return;
     }
 
     if (instant) {
       // Продажа по рыночной — моментально: снять 1 или 2 NFT (дуо), начислить баланс
       if (price <= 0) {
-        alert('❌ Рыночная цена недоступна');
+        showError('Рыночная цена недоступна');
         return;
       }
       try {
         if (nft.is_duo) {
           const copies = await countUserNftCopies(telegramUser.id, nft.id);
           if (copies < 2) {
-            alert('❌ Дуо-токен продаётся парой (2 шт.). У вас только ' + copies + ' шт. Нужно 2 таких NFT.');
+            showError(`Дуо-токен продаётся парой (2 шт.). У вас только ${copies} шт.`);
             return;
           }
         }
         const ownsNft = await userOwnsNft(telegramUser.id, nft.id);
         if (!ownsNft) {
-          alert('❌ Вы не владеете этим NFT.');
+          showError('Вы не владеете этим NFT');
           return;
         }
         const quantity = nft.is_duo ? 2 : 1;
         for (let i = 0; i < quantity; i++) {
           const removed = await removeOneUserNft(telegramUser.id, nft.id);
           if (!removed) {
-            alert('❌ Не удалось списать NFT. Попробуйте снова.');
+            showError('Не удалось списать NFT. Попробуйте снова.');
             return;
           }
         }
@@ -588,7 +601,7 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
         const newBalance = parseFloat((user.balance + totalAmount).toFixed(2));
         const ok = await updateUserBalance(telegramUser.id, newBalance);
         if (!ok) {
-          alert('⚠️ NFT снят, но баланс не обновился. Обратитесь в поддержку.');
+          showError('NFT снят, но баланс не обновился. Обратитесь в поддержку.');
         }
         await addHistoryItem('sell', quantity === 2 ? `Продажа пары: ${nft.title}` : `Продажа: ${nft.title}`, totalAmount, nft.id, nft.title);
         setUser(prev => ({
@@ -612,18 +625,18 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
         setView(ViewState.PORTFOLIO);
       } catch (error) {
         console.error('Error instant sell:', error);
-        alert('❌ Ошибка при продаже. Попробуйте снова.');
+        showError('Ошибка при продаже. Попробуйте снова.');
       }
       return;
     }
 
     // По своей цене — создаём листинг, ожидаем покупателя
     if (price < 1) {
-      alert('❌ Минимальная цена: 1 TON');
+      showError('Минимальная цена: 1 TON');
       return;
     }
     if (price > 1000000) {
-      alert('❌ Максимальная цена: 1,000,000 TON');
+      showError('Максимальная цена: 1 000 000 TON');
       return;
     }
 
@@ -631,14 +644,14 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
       if (nft.is_duo) {
         const copies = await countUserNftCopies(telegramUser.id, nft.id);
         if (copies < 2) {
-          alert('❌ Дуо-токен продаётся парой (2 шт.). У вас только ' + copies + ' шт. Нужно 2 таких NFT.');
+          showError(`Дуо-токен продаётся парой (2 шт.). У вас только ${copies} шт.`);
           return;
         }
       }
 
       const ownsNft = await userOwnsNft(telegramUser.id, nft.id);
       if (!ownsNft) {
-        alert('❌ Вы не владеете этим NFT или он уже выставлен на продажу!');
+        showError('Вы не владеете этим NFT или он уже выставлен на продажу');
         return;
       }
 
@@ -652,23 +665,14 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
 
       if (listing) {
         setSuccessOverlay({ show: true, message: 'Заявка отправлена' });
-        alert(
-          `✅ Предложение отправлено!\n\n` +
-          `NFT: "${nft.title}"\n` +
-          (nft.is_duo ? `Пара (2 шт.), итого: ${price} TON\n\n` : `Цена: ${price} TON\n\n`) +
-          `Вы выставили NFT на продажу. Когда кто-то купит:\n` +
-          `• Средства поступят на ваш баланс\n` +
-          (nft.is_duo ? `• Оба NFT будут удалены из портфеля\n` : `• NFT будет удалён из портфеля\n`) +
-          `• Обновление в реальном времени на сайте`
-        );
         console.log(`📝 Created listing: ${nft.title} for ${price} TON`);
         setView(ViewState.PORTFOLIO);
       } else {
-        alert('❌ Ошибка при создании листинга. Попробуйте снова.');
+        showError('Ошибка при создании листинга. Попробуйте снова.');
       }
     } catch (error) {
       console.error('Error creating listing:', error);
-      alert('❌ Ошибка при создании листинга. Проверьте подключение к интернету.');
+      showError('Ошибка при создании листинга. Проверьте подключение к интернету.');
     }
   };
 
@@ -683,12 +687,13 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
     switch (view) {
       case ViewState.STORE:
         return (
-          <StoreView 
-            nfts={storeNfts} 
-            onNftClick={handleNftClick} 
+          <StoreView
+            nfts={storeNfts}
+            onNftClick={handleNftClick}
             userBalance={user.balance}
             onOpenWallet={() => setIsWalletSheetOpen(true)}
             marketListSeed={marketListSeed}
+            catalogLoading={catalogLoading}
           />
         );
       case ViewState.PORTFOLIO:
@@ -733,6 +738,7 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
             isOwner={selectedNft.owner === user.address}
             onOpenWallet={() => setIsWalletSheetOpen(true)}
             onSellNFT={handleSellNFT}
+            onError={showError}
           />
         ) : null;
       case ViewState.CREATE:
@@ -743,8 +749,9 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
   };
 
   return (
-    <div className="min-h-screen bg-tg-bg text-white font-sans">
-      <main className="max-w-md mx-auto min-h-screen bg-tg-bg relative overflow-hidden">
+    <div className="min-h-screen min-h-dvh bg-tg-bg text-white font-sans overflow-hidden">
+      {isLandscape && <LandscapeStub />}
+      <main className="max-w-md mx-auto min-h-screen min-h-dvh bg-tg-bg relative overflow-hidden w-full">
         {renderContent()}
         
         {view !== ViewState.NFT_DETAIL && (
@@ -770,6 +777,8 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
             isOpen={isCardDepositOpen}
             onClose={() => setIsCardDepositOpen(false)}
             onConfirm={handleCardDeposit}
+            onError={showError}
+            onSuccess={(msg) => setSuccessOverlay({ show: true, message: msg })}
             telegramUserId={telegramUser?.id}
         />
 
@@ -777,6 +786,8 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
             isOpen={isWithdrawOpen}
             onClose={() => setIsWithdrawOpen(false)}
             balance={user.balance}
+            onError={showError}
+            onSuccess={(msg) => setSuccessOverlay({ show: true, message: msg })}
             telegramUserId={telegramUser?.id}
         />
         
@@ -795,6 +806,11 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
           isVisible={successOverlay.show}
           message={successOverlay.message}
           onHide={() => setSuccessOverlay({ show: false })}
+        />
+        <ErrorToast
+          isVisible={errorToast.show}
+          message={errorToast.message}
+          onHide={hideError}
         />
       </main>
     </div>

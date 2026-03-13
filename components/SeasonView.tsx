@@ -43,10 +43,11 @@ const SeasonView: React.FC<SeasonViewProps> = ({
   };
 
   return (
-    <div className="pb-24 animate-fade-in bg-tg-bg min-h-screen">
-      <Header balance={userBalance} onOpenWallet={onOpenWallet} />
+    <div className="animate-fade-in min-h-screen bg-tg-bg">
+      <div className="screen-content">
+        <Header balance={userBalance} onOpenWallet={onOpenWallet} />
 
-      <div className="pt-14 px-4">
+        <div className="px-4">
         <div className="rounded-xl bg-tg-card border border-white/5 overflow-hidden">
           <div className="p-6 bg-tg-elevated/50 border-b border-white/5">
             <div className="flex items-center gap-2 mb-2">
@@ -83,7 +84,7 @@ const SeasonView: React.FC<SeasonViewProps> = ({
               className="rounded-xl bg-tg-bg border border-white/5 p-4 flex items-center gap-3 cursor-pointer hover:bg-white/5 active:scale-[0.99] transition-transform"
             >
               <div className="w-14 h-14 rounded-xl overflow-hidden border border-white/5 flex-shrink-0 bg-tg-elevated">
-                <img src={PRIZE_IMAGE} alt="Приз" className="w-full h-full object-cover" />
+                <img src={PRIZE_IMAGE} alt="Приз" className="w-full h-full object-cover aspect-square" loading="lazy" decoding="async" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-tg-hint text-xs font-medium uppercase tracking-wide">Главный приз</p>
@@ -122,6 +123,7 @@ const SeasonView: React.FC<SeasonViewProps> = ({
             </button>
 
           </div>
+        </div>
         </div>
       </div>
 

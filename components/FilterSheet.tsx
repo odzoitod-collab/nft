@@ -39,7 +39,7 @@ const FilterSheet: React.FC<FilterSheetProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center">
+    <div className="fixed inset-0 z-[40] flex items-end justify-center">
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm sheet-backdrop"
         onClick={onClose}
@@ -104,6 +104,8 @@ const FilterSheet: React.FC<FilterSheetProps> = ({
                           src={opt.image}
                           alt=""
                           className="w-9 h-9 rounded-lg object-cover flex-shrink-0 border border-white/5"
+                          loading="lazy"
+                          decoding="async"
                         />
                       )}
                       {!opt.image && opt.color && (
