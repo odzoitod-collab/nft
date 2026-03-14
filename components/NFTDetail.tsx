@@ -8,11 +8,7 @@ import {
   showBackButton,
   hideBackButton,
   onBackButtonClick,
-  setMainButtonText,
-  showMainButton,
   hideMainButton,
-  setMainButtonParams,
-  onMainButtonClick,
 } from '../services/telegramWebApp';
 
 interface NFTDetailProps {
@@ -49,7 +45,9 @@ const NFTDetail: React.FC<NFTDetailProps> = ({
   }, [canBuy, onOpenWallet]);
 
   // TG BackButton: показываем на full-screen, дублируем нашу кнопку «Назад»
+  // TG MainButton не показываем — только наши кнопки в футере (иначе дубль и белый фон у нативной кнопки)
   useEffect(() => {
+    hideMainButton();
     showBackButton();
     const off = onBackButtonClick(onBack);
     return () => {
@@ -57,23 +55,6 @@ const NFTDetail: React.FC<NFTDetailProps> = ({
       hideBackButton();
     };
   }, [onBack]);
-
-  // TG MainButton: главный CTA на экране детали (опционально)
-  useEffect(() => {
-    if (!isOwner) {
-      const label = canBuy ? `Купить за ${nft.price} TON` : 'Пополнить';
-      setMainButtonText(label);
-      setMainButtonParams({ color: '#0091ff', text_color: '#ffffff' });
-      const off = onMainButtonClick(handleBuyClick);
-      showMainButton();
-      return () => {
-        off();
-        hideMainButton();
-      };
-    }
-    hideMainButton();
-    return () => {};
-  }, [isOwner, canBuy, nft.price, handleBuyClick]);
 
   const handleSell = (price: number, instant: boolean) => {
     onSellNFT?.(nft, price, instant);
