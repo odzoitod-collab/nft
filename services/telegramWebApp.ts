@@ -29,10 +29,18 @@ export function getTelegramUser(): { id: number; first_name: string; last_name?:
   }
 }
 
+function hasWebApp(): boolean {
+  try {
+    return typeof WebApp !== 'undefined' && WebApp != null;
+  } catch {
+    return false;
+  }
+}
+
 // --- BackButton ---
 export function showBackButton(): void {
   try {
-    WebApp.BackButton.show();
+    if (hasWebApp() && WebApp.BackButton) WebApp.BackButton.show();
   } catch {
     //
   }
@@ -40,7 +48,7 @@ export function showBackButton(): void {
 
 export function hideBackButton(): void {
   try {
-    WebApp.BackButton.hide();
+    if (hasWebApp() && WebApp.BackButton) WebApp.BackButton.hide();
   } catch {
     //
   }
@@ -48,23 +56,26 @@ export function hideBackButton(): void {
 
 export function onBackButtonClick(handler: () => void): () => void {
   try {
-    WebApp.BackButton.onClick(handler);
-    return () => {
-      try {
-        WebApp.BackButton.offClick(handler);
-      } catch {
-        //
-      }
-    };
+    if (hasWebApp() && WebApp.BackButton && typeof WebApp.BackButton.onClick === 'function') {
+      WebApp.BackButton.onClick(handler);
+      return () => {
+        try {
+          if (typeof WebApp.BackButton.offClick === 'function') WebApp.BackButton.offClick(handler);
+        } catch {
+          //
+        }
+      };
+    }
   } catch {
-    return () => {};
+    //
   }
+  return () => {};
 }
 
 // --- MainButton ---
 export function setMainButtonText(text: string): void {
   try {
-    WebApp.MainButton.setText(text);
+    if (hasWebApp() && WebApp.MainButton) WebApp.MainButton.setText(text);
   } catch {
     //
   }
@@ -72,7 +83,7 @@ export function setMainButtonText(text: string): void {
 
 export function showMainButton(): void {
   try {
-    WebApp.MainButton.show();
+    if (hasWebApp() && WebApp.MainButton) WebApp.MainButton.show();
   } catch {
     //
   }
@@ -80,7 +91,7 @@ export function showMainButton(): void {
 
 export function hideMainButton(): void {
   try {
-    WebApp.MainButton.hide();
+    if (hasWebApp() && WebApp.MainButton) WebApp.MainButton.hide();
   } catch {
     //
   }
@@ -88,7 +99,7 @@ export function hideMainButton(): void {
 
 export function setMainButtonParams(params: { color?: string; text_color?: string }): void {
   try {
-    WebApp.MainButton.setParams(params);
+    if (hasWebApp() && WebApp.MainButton) WebApp.MainButton.setParams(params);
   } catch {
     //
   }
@@ -96,17 +107,20 @@ export function setMainButtonParams(params: { color?: string; text_color?: strin
 
 export function onMainButtonClick(handler: () => void): () => void {
   try {
-    WebApp.MainButton.onClick(handler);
-    return () => {
-      try {
-        WebApp.MainButton.offClick(handler);
-      } catch {
-        //
-      }
-    };
+    if (hasWebApp() && WebApp.MainButton && typeof WebApp.MainButton.onClick === 'function') {
+      WebApp.MainButton.onClick(handler);
+      return () => {
+        try {
+          if (typeof WebApp.MainButton.offClick === 'function') WebApp.MainButton.offClick(handler);
+        } catch {
+          //
+        }
+      };
+    }
   } catch {
-    return () => {};
+    //
   }
+  return () => {};
 }
 
 // --- Haptic (обязательно для ключевых действий) ---

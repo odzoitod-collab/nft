@@ -9,11 +9,18 @@ interface NFTCardProps {
 }
 
 const NFTCard: React.FC<NFTCardProps> = ({ nft, onClick, showOwnerBadge }) => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClick(nft);
+  };
+
   return (
     <button
       type="button"
       className="nft-card min-touch w-full text-left flex flex-col h-full"
-      onClick={() => onClick(nft)}
+      style={{ touchAction: 'manipulation' }}
+      onClick={handleClick}
+      onPointerDown={(e) => e.stopPropagation()}
     >
       <div className="aspect-square w-full relative overflow-hidden bg-[var(--bg-raised)]">
         <img
