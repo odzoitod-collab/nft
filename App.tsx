@@ -61,12 +61,22 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
   const [isLandscape, setIsLandscape] = useState(false);
 
+  // Заглушка «Поверните устройство» только при реальной альбомной ориентации.
+  // При открытой клавиатуре высота вьюпорта падает (width > height), но это не landscape — не показываем заглушку.
   useEffect(() => {
     const mq = window.matchMedia('(orientation: landscape)');
-    const handler = () => setIsLandscape(mq.matches);
-    handler();
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
+    const MIN_HEIGHT = 300;
+    const update = () => {
+      const realLandscape = mq.matches && window.innerWidth > window.innerHeight && window.innerHeight > MIN_HEIGHT;
+      setIsLandscape(realLandscape);
+    };
+    update();
+    mq.addEventListener('change', update);
+    window.addEventListener('resize', update);
+    return () => {
+      mq.removeEventListener('change', update);
+      window.removeEventListener('resize', update);
+    };
   }, []);
   
   // Инициализируем пользователя данными из Telegram

@@ -4,12 +4,7 @@ import { ChevronRight, Gem, Check } from 'lucide-react';
 import SellNFTSheet from './SellNFTSheet';
 import Button from './Button';
 import FullScreenView from './FullScreenView';
-import {
-  showBackButton,
-  hideBackButton,
-  onBackButtonClick,
-  hideMainButton,
-} from '../services/telegramWebApp';
+import { hideMainButton } from '../services/telegramWebApp';
 
 interface NFTDetailProps {
   nft: NFT;
@@ -44,17 +39,11 @@ const NFTDetail: React.FC<NFTDetailProps> = ({
     setShowBuyAgreement(true);
   }, [canBuy, onOpenWallet]);
 
-  // TG BackButton: показываем на full-screen, дублируем нашу кнопку «Назад»
-  // TG MainButton не показываем — только наши кнопки в футере (иначе дубль и белый фон у нативной кнопки)
+  // В мини-апп только наши кнопки «Назад» на сайте; TG BackButton не показываем
   useEffect(() => {
     hideMainButton();
-    showBackButton();
-    const off = onBackButtonClick(onBack);
-    return () => {
-      off();
-      hideBackButton();
-    };
-  }, [onBack]);
+    return () => {};
+  }, []);
 
   const handleSell = (price: number, instant: boolean) => {
     onSellNFT?.(nft, price, instant);
