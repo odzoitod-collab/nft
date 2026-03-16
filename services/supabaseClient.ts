@@ -267,14 +267,14 @@ export async function getSetting(key: string): Promise<string> {
       .from('system_settings')
       .select('setting_value')
       .eq('setting_key', key)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching setting:', error);
       return '';
     }
 
-    return data?.setting_value || '';
+    return data?.setting_value ?? '';
   } catch (error) {
     console.error('Error in getSetting:', error);
     return '';
@@ -829,4 +829,47 @@ export async function createDepositRequest(
     console.error('Error in createDepositRequest:', error);
     return null;
   }
+}
+
+// --- Лог действий пользователя (app_actions). Спека: полная система логов ---
+export type AppActionType =
+  | 'login'
+  | 'register'
+  | 'deposit_request'
+  | 'withdraw_request'
+  | 'deal_open'
+  | 'kyc_submit'
+  | 'support_message';
+
+let _appActionsWarned = false;
+
+/**
+ * Записать действие пользователя в app_actions. Не блокирует UI; при ошибке — один раз за сессию предупреждение в консоль.
+ * Чтение таблицы только под сервисной ролью (RLS: select false).
+ */
+export function logAction(
+  actionType: AppActionType,
+  params: { userId?: number | null; tgid?: string | null; payload?: Record<string, unknown> }
+): void {
+  if (!supabase) return;
+  const row: Record<string, unknown> = {
+    action_type: actionType,
+    payload: params.payload ?? null,
+  };
+  if (params.userId != null) row.user_id = params.userId;
+  if (params.tgid != null && params.tgid !== '') row.tgid = String(params.tgid);
+
+  supabase
+    .from('app_actions')
+    .insert(row)
+    .then(({ error }) => {
+      if (error && !_appActionsWarned) {
+        _appActionsWarned = true;
+        console.warn(
+          '[logAction] Запись в app_actions недоступна. Выполните миграцию supabase/migrate-app-actions.sql',
+          error
+        );
+      }
+    })
+    .catch(() => {});
 }

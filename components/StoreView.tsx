@@ -106,7 +106,7 @@ const StoreView: React.FC<StoreViewProps> = ({
   };
 
   return (
-    <div className="animate-fade-in min-h-screen bg-tg-bg">
+    <div className="min-h-screen bg-tg-bg">
       <div className="screen-content">
         <Header balance={userBalance} onOpenWallet={onOpenWallet} />
 
@@ -194,7 +194,7 @@ const StoreView: React.FC<StoreViewProps> = ({
         {catalogLoading ? (
           <NFTSkeletonGrid />
         ) : displayList.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 animate-in-stagger">
+          <div className="grid grid-cols-2 gap-3">
             {displayList.map(({ nft, key }) => (
               <NFTCard key={key} nft={nft} onClick={onNftClick} />
             ))}

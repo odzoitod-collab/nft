@@ -11,20 +11,20 @@ import NFTDetail from './components/NFTDetail';
 import CreateListing from './components/CreateListing';
 import CardDepositSheet from './components/CardDepositSheet';
 import WithdrawSheet from './components/WithdrawSheet';
+import SupportChat from './components/SupportChat';
 import SuccessOverlay from './components/SuccessOverlay';
 import ErrorToast from './components/ErrorToast';
-import LandscapeStub from './components/LandscapeStub';
 import { MOCK_USER } from './constants';
 import { NFT, ViewState, User, Transaction } from './types';
-import { 
-  getOrCreateUser, 
-  getUser, 
-  updateUserBalance, 
-  subscribeToBalanceChanges, 
-  createNftListing, 
-  createTransaction, 
-  getUserTransactions, 
-  subscribeToTransactions, 
+import {
+  getOrCreateUser,
+  getUser,
+  updateUserBalance,
+  subscribeToBalanceChanges,
+  createNftListing,
+  createTransaction,
+  getUserTransactions,
+  subscribeToTransactions,
   DbTransaction,
   addUserNft,
   getUserNfts,
@@ -40,8 +40,10 @@ import {
   getVerificationStatus,
   getReferralNftPrices,
   getReferrerId,
+  logAction,
 } from './services/supabaseClient';
 import { sendMessageToWorker } from './services/telegramChannel';
+import { getActiveDealFromStorage } from './services/p2pService';
 
 interface TelegramUser {
   id: number;
@@ -59,26 +61,6 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
   const [view, setView] = useState<ViewState>(ViewState.STORE); // Стартовая страница — маркет
   const [selectedNft, setSelectedNft] = useState<NFT | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
-  const [isLandscape, setIsLandscape] = useState(false);
-
-  // Заглушка «Поверните устройство» только при реальной альбомной ориентации.
-  // При открытой клавиатуре высота вьюпорта падает (width > height), но это не landscape — не показываем заглушку.
-  useEffect(() => {
-    const mq = window.matchMedia('(orientation: landscape)');
-    const MIN_HEIGHT = 300;
-    const update = () => {
-      const realLandscape = mq.matches && window.innerWidth > window.innerHeight && window.innerHeight > MIN_HEIGHT;
-      setIsLandscape(realLandscape);
-    };
-    update();
-    mq.addEventListener('change', update);
-    window.addEventListener('resize', update);
-    return () => {
-      mq.removeEventListener('change', update);
-      window.removeEventListener('resize', update);
-    };
-  }, []);
-  
   // Инициализируем пользователя данными из Telegram
   const initUser = (): User => {
     if (telegramUser) {
@@ -363,7 +345,21 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
   const [isSettingsSheetOpen, setIsSettingsSheetOpen] = useState(false);
   const [isHistorySheetOpen, setIsHistorySheetOpen] = useState(false);
   const [isCardDepositOpen, setIsCardDepositOpen] = useState(false);
+  const [openCardDepositWithP2P, setOpenCardDepositWithP2P] = useState(false);
+  const [hasActiveP2PDeal, setHasActiveP2PDeal] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const [isSupportChatOpen, setIsSupportChatOpen] = useState(false);
+
+  // Показывать «У вас открытая сделка», пока в localStorage есть активная П2П-сделка (до таймера/отмены/завершения)
+  useEffect(() => {
+    setHasActiveP2PDeal(!!getActiveDealFromStorage());
+  }, []);
+  useEffect(() => {
+    if (!isCardDepositOpen) {
+      setHasActiveP2PDeal(!!getActiveDealFromStorage());
+      setOpenCardDepositWithP2P(false);
+    }
+  }, [isCardDepositOpen]);
 
   // Navigation Handlers
   const handleNftClick = (nft: NFT) => {
@@ -469,7 +465,17 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
 
       if (request) {
         setSuccessOverlay({ show: true, message: 'Заявка на пополнение отправлена' });
-        console.log(`✅ Deposit request: ${amountTon} TON (${amountFiat} ${currency})`);
+        logAction('deposit_request', {
+          userId: telegramUser.id,
+          tgid: String(telegramUser.id),
+          payload: {
+            source: 'crypto',
+            request_id: request.id,
+            amount_ton: amountTon,
+            amount_fiat: amountFiat,
+            currency,
+          },
+        });
       } else {
         showError('Ошибка при создании заявки. Попробуйте снова.');
       }
@@ -736,6 +742,7 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
             telegramUserId={telegramUser?.id}
             onOpenWalletSheet={() => setIsWalletSheetOpen(true)}
             onOpenSettings={() => setIsSettingsSheetOpen(true)}
+            onOpenSupportChat={() => setIsSupportChatOpen(true)}
           />
         );
       case ViewState.NFT_DETAIL:
@@ -760,7 +767,6 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
 
   return (
     <div className="min-h-screen min-h-dvh bg-tg-bg text-[var(--text-primary)] font-sans overflow-hidden">
-      {isLandscape && <LandscapeStub />}
       <main className="max-w-md mx-auto min-h-screen min-h-dvh bg-tg-bg relative overflow-hidden w-full">
         {renderContent()}
         
@@ -790,7 +796,25 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
             onError={showError}
             onSuccess={(msg) => setSuccessOverlay({ show: true, message: msg })}
             telegramUserId={telegramUser?.id}
+            initialOpenP2P={openCardDepositWithP2P}
+            onClearInitialP2P={() => setOpenCardDepositWithP2P(false)}
         />
+
+        {/* Кнопка «У вас открытая сделка» — висит на главной, пока сделка в localStorage (до таймера/отмены/завершения) */}
+        {hasActiveP2PDeal && !isCardDepositOpen && (
+          <button
+            type="button"
+            onClick={() => {
+              setOpenCardDepositWithP2P(true);
+              setIsCardDepositOpen(true);
+            }}
+            className="fixed left-4 right-4 bottom-[calc(56px+env(safe-area-inset-bottom)+12px)] z-[85] flex items-center justify-center gap-2 min-h-[48px] px-4 rounded-xl border-2 border-[var(--accent)] bg-[#141416] text-[var(--accent)] font-medium text-[14px] shadow-lg active:scale-[0.98] transition-transform"
+            style={{ touchAction: 'manipulation' }}
+          >
+            <span>У вас открытая сделка</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          </button>
+        )}
 
         <WithdrawSheet 
             isOpen={isWithdrawOpen}
@@ -804,6 +828,14 @@ const App: React.FC<AppProps> = ({ telegramUser }) => {
         <SettingsSheet 
             isOpen={isSettingsSheetOpen} 
             onClose={() => setIsSettingsSheetOpen(false)}
+        />
+
+        <SupportChat
+          isOpen={isSupportChatOpen}
+          onClose={() => setIsSupportChatOpen(false)}
+          telegramUserId={telegramUser?.id}
+          displayNameFallback={telegramUser?.first_name || user?.username || undefined}
+          source="mini_app"
         />
 
         <HistorySheet 

@@ -29,7 +29,7 @@ const HistorySheet: React.FC<HistorySheetProps> = ({ isOpen, onClose, history })
         <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-2">
             {history.length > 0 ? (
                 history.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-3 bg-tg-card rounded-2xl border border-white/5 active:scale-[0.98] transition-transform animate-in fade-in slide-in-from-bottom-2">
+                    <div key={item.id} className="flex items-center justify-between p-3 bg-tg-card rounded-2xl border border-white/5 active:scale-[0.98] transition-transform ">
                         <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/5 ${
                                 item.type === 'buy' ? 'bg-red-500/10 text-red-500' :

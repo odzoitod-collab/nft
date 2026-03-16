@@ -29,14 +29,14 @@
   --ease-out: cubic-bezier(0.25, 0, 0, 1);       /* выезд шитов */
   --ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1); /* кнопки, иконки с отскоком */
 
-  /* Длительности (ms) */
-  --duration-tap: 50ms;
-  --duration-hover: 150ms;
-  --duration-backdrop: 200ms;
-  --duration-sheet-close: 250ms;
-  --duration-sheet-open: 380ms;
-  --duration-fullscreen: 350ms;
-  --duration-content: 400ms;
+  /* Длительности (ms) — сокращены для мгновенного отклика */
+  --duration-tap: 30ms;
+  --duration-hover: 100ms;
+  --duration-backdrop: 80ms;
+  --duration-sheet-close: 120ms;
+  --duration-sheet-open: 180ms;
+  --duration-fullscreen: 120ms;
+  --duration-content: 80ms;
 
   /* Алиасы для обратной совместимости */
   --ease-out-expo: var(--ease-spring);
@@ -165,53 +165,36 @@ a.touch-target {
   will-change: transform;
 }
 
-/* ========== Full-screen — вход 350ms ease-spring, выход 250ms ========== */
-@keyframes screenIn {
-  from { opacity: 0; transform: translateY(24px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes screenOut {
-  from { opacity: 1; transform: translateY(0) scale(1); }
-  to { opacity: 0; transform: translateY(24px) scale(0.97); }
-}
-.fullscreen-view {
-  animation: screenIn var(--duration-fullscreen) var(--ease-spring) forwards;
-  will-change: transform;
+/* ========== Full-screen — мгновенный показ ========== */
+.fullscreen-view,
+.sheet-panel-full {
+  animation: none;
+  opacity: 1;
+  transform: none;
 }
 .fullscreen-view--exiting {
-  animation: screenOut var(--duration-sheet-close) ease-in forwards;
-  will-change: transform;
-}
-.sheet-panel-full {
-  animation: screenIn var(--duration-fullscreen) var(--ease-spring) forwards;
+  animation: fadeIn 0.08s ease-out reverse forwards;
 }
 
-/* ========== Контент — fade ========== */
+/* ========== Контент — мгновенное появление (минимальная анимация) ========== */
 .animate-fade-in {
-  animation: fadeIn 0.25s var(--ease-out) forwards;
+  animation: fadeIn 0.06s var(--ease-out) forwards;
 }
 .slide-up {
-  animation: slideUp 0.35s var(--ease-spring) forwards;
-}
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  animation: none;
+  opacity: 1;
 }
 
-/* ========== Список карточек — stagger по очереди (400ms) ========== */
+/* ========== Список карточек — без stagger, всё сразу ========== */
 .animate-in-stagger > * {
-  animation: fadeInUp var(--duration-content) var(--ease-spring) forwards;
+  animation: fadeIn 0.05s var(--ease-out) forwards;
 }
-.animate-in-stagger > *:nth-child(1) { animation-delay: 0.02s; }
-.animate-in-stagger > *:nth-child(2) { animation-delay: 0.04s; }
-.animate-in-stagger > *:nth-child(3) { animation-delay: 0.06s; }
-.animate-in-stagger > *:nth-child(4) { animation-delay: 0.08s; }
-.animate-in-stagger > *:nth-child(5) { animation-delay: 0.1s; }
-.animate-in-stagger > *:nth-child(n+6) { animation-delay: 0.12s; }
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+.animate-in-stagger > *:nth-child(1),
+.animate-in-stagger > *:nth-child(2),
+.animate-in-stagger > *:nth-child(3),
+.animate-in-stagger > *:nth-child(4),
+.animate-in-stagger > *:nth-child(5),
+.animate-in-stagger > *:nth-child(n+6) { animation-delay: 0s; }
 
 /* ========== Кнопки — active 80ms, release 200ms ease-spring ========== */
 .btn-touch,
@@ -314,7 +297,7 @@ a.touch-target {
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: opacity 0.3s ease, visibility 0.3s;
+  transition: opacity 0.12s ease, visibility 0.12s;
 }
 .preloader-content {
   display: flex;
@@ -346,7 +329,7 @@ a.touch-target {
   width: 0;
   background: var(--accent);
   border-radius: 1px;
-  animation: preloader-progress 1.2s ease-out forwards;
+  animation: preloader-progress 0.4s ease-out forwards;
 }
 @keyframes preloader-progress {
   to { width: 100%; }

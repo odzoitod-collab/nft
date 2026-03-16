@@ -4,8 +4,8 @@ import App from './App';
 import Preloader from './components/Preloader';
 import { initTelegram, getTelegramUser } from './services/telegramWebApp';
 
-const PRELOADER_FADE_MS = 300;
-const PRELOADER_UNMOUNT_MS = 500;
+const PRELOADER_FADE_MS = 100;
+const PRELOADER_UNMOUNT_MS = 80;
 
 // Инициализация TG Mini App: ready, expand, цвета, вертикальные свайпы
 initTelegram();
@@ -16,15 +16,21 @@ function Root() {
   const [preloaderHiding, setPreloaderHiding] = useState(false);
 
   useEffect(() => {
-    const onLoad = () => {
+    let unmountTimer: ReturnType<typeof setTimeout>;
+    const hide = () => {
       setPreloaderHiding(true);
-      setTimeout(() => setShowPreloader(false), PRELOADER_FADE_MS + PRELOADER_UNMOUNT_MS);
+      unmountTimer = setTimeout(() => setShowPreloader(false), PRELOADER_FADE_MS + PRELOADER_UNMOUNT_MS);
     };
     if (document.readyState === 'complete') {
-      onLoad();
+      hide();
     } else {
-      window.addEventListener('load', onLoad);
-      return () => window.removeEventListener('load', onLoad);
+      window.addEventListener('load', hide);
+      const fallback = setTimeout(hide, 350);
+      return () => {
+        window.removeEventListener('load', hide);
+        clearTimeout(fallback);
+        clearTimeout(unmountTimer);
+      };
     }
   }, []);
 

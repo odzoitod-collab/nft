@@ -11,6 +11,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   ImageIcon,
+  MessageCircle,
 } from 'lucide-react';
 import { getUserTransactions, getNftCatalog, getVerificationStatus } from '../services/supabaseClient';
 import { HistorySkeletonList } from './Skeleton';
@@ -23,6 +24,7 @@ interface ProfileViewProps {
   telegramUserId?: number;
   onOpenWalletSheet: () => void;
   onOpenSettings: () => void;
+  onOpenSupportChat?: () => void;
 }
 
 interface TxItem {
@@ -64,6 +66,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
   telegramUserId,
   onOpenWalletSheet,
   onOpenSettings,
+  onOpenSupportChat,
 }) => {
   const [purchases, setPurchases] = useState<TxItem[]>([]);
   const [sales, setSales] = useState<TxItem[]>([]);
@@ -107,7 +110,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
   }, [telegramUserId]);
 
   return (
-    <div className="animate-fade-in min-h-screen bg-tg-bg">
+    <div className="min-h-screen bg-tg-bg">
       <div className="screen-content">
         <div className="px-4">
         <div className="flex flex-col items-center pt-6 pb-6">
@@ -195,6 +198,21 @@ const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
           </button>
 
+          {onOpenSupportChat && (
+            <button
+              type="button"
+              onClick={onOpenSupportChat}
+              className="w-full flex items-center justify-between p-4 rounded-xl bg-tg-card border border-white/5 hover:bg-tg-elevated transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-tg-button/20 flex items-center justify-center">
+                  <MessageCircle className="w-4 h-4 text-tg-button" />
+                </div>
+                <span className="font-medium text-white">Поддержка</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-tg-hint" />
+            </button>
+          )}
           <button
             type="button"
             onClick={onOpenSettings}

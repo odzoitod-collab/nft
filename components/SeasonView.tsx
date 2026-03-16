@@ -43,7 +43,7 @@ const SeasonView: React.FC<SeasonViewProps> = ({
   };
 
   return (
-    <div className="animate-fade-in min-h-screen bg-tg-bg">
+    <div className="min-h-screen bg-tg-bg">
       <div className="screen-content">
         <Header balance={userBalance} onOpenWallet={onOpenWallet} />
 

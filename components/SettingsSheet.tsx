@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, HelpCircle, Bell, ChevronRight, ChevronLeft, ToggleLeft, ToggleRight, ExternalLink } from 'lucide-react';
-import { getSupportUsername, getBotUsername } from '../services/supabaseClient';
+import { getBotUsername } from '../services/supabaseClient';
 import BottomSheet from './BottomSheet';
 
 interface SettingsSheetProps {
@@ -12,30 +12,12 @@ type SettingsTab = 'main' | 'notifications' | 'privacy' | 'help';
 
 const SettingsSheet: React.FC<SettingsSheetProps> = ({ isOpen, onClose }) => {
   const [currentTab, setCurrentTab] = useState<SettingsTab>('main');
-  const [supportUsername, setSupportUsername] = useState<string>('your_support_username');
   const [botUsername, setBotUsername] = useState<string>('');
-
-  useEffect(() => {
-    const loadSupportUsername = async () => {
-      try {
-        const username = await getSupportUsername();
-        setSupportUsername(username || 'your_support_username');
-      } catch (error) {
-        console.error('Error loading support username:', error);
-      }
-    };
-
-    if (isOpen) {
-      loadSupportUsername();
-    }
-  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
     getBotUsername().then(setBotUsername);
   }, [isOpen]);
-
-  const supportLink = supportUsername.replace(/^@/, '');
 
   const handleBack = () => setCurrentTab('main');
 
@@ -77,7 +59,7 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ isOpen, onClose }) => {
             
             {/* Main Menu */}
             {currentTab === 'main' && (
-                <div className="space-y-4 animate-fade-in">
+                <div className="space-y-4">
                     <div className="bg-tg-card rounded-2xl overflow-hidden border border-white/5">
                         <SettingsItem 
                             icon={<Bell className="w-5 h-5" />} 
@@ -107,7 +89,7 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ isOpen, onClose }) => {
 
             {/* Notifications Sub-menu */}
             {currentTab === 'notifications' && (
-                <div className="space-y-4 animate-fade-in">
+                <div className="space-y-4">
                     <div className="bg-tg-card rounded-2xl overflow-hidden border border-white/5 p-1">
                         <ToggleItem label="Новые ставки" description="Уведомления о перебитых ставках" />
                         <ToggleItem label="Продажа предмета" description="Когда ваш NFT куплен" />
@@ -121,7 +103,7 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ isOpen, onClose }) => {
 
             {/* Privacy Sub-menu */}
             {currentTab === 'privacy' && (
-                <div className="space-y-4 animate-fade-in">
+                <div className="space-y-4">
                      <div className="bg-tg-card rounded-2xl overflow-hidden border border-white/5 p-1">
                         <ToggleItem label="Показывать баланс" description="Скрыть баланс на главном экране" defaultChecked={true} />
                         <ToggleItem label="Разрешить сообщения" description="От других участников маркета" defaultChecked={false} />
@@ -131,7 +113,7 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ isOpen, onClose }) => {
 
             {/* Help Sub-menu */}
             {currentTab === 'help' && (
-                <div className="space-y-4 animate-fade-in">
+                <div className="space-y-4">
                     <div className="bg-tg-card rounded-2xl overflow-hidden border border-white/5">
                         {botUsername && (
                             <a
@@ -152,30 +134,6 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({ isOpen, onClose }) => {
                                 <ExternalLink className="w-4 h-4 text-tg-hint" />
                             </a>
                         )}
-                        <a 
-                            href={`https://t.me/${supportLink}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 cursor-pointer transition-colors flex items-center justify-between"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-tg-button/20 flex items-center justify-center">
-                                    <HelpCircle className="w-5 h-5 text-tg-button" />
-                                </div>
-                                <div>
-                                    <div className="font-semibold text-white">Техподдержка</div>
-                                    <div className="text-xs text-tg-hint">Связаться с поддержкой</div>
-                                </div>
-                            </div>
-                            <ExternalLink className="w-4 h-4 text-tg-hint" />
-                        </a>
-                        <div 
-                            onClick={() => window.open(`https://t.me/${supportLink}`, '_blank')}
-                            className="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 cursor-pointer transition-colors flex items-center justify-between"
-                        >
-                            <span className="font-medium text-red-400">Сообщить о проблеме</span>
-                            <ExternalLink className="w-4 h-4 text-red-400" />
-                        </div>
                     </div>
                     <div className="bg-tg-card rounded-2xl p-4 border border-white/5">
                         <h3 className="font-semibold text-white mb-2">Часто задаваемые вопросы</h3>

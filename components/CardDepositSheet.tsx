@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Copy, Check, AlertCircle, Globe, Upload } from 'lucide-react';
 import LoadingRow from './LoadingRow';
+import P2pDepositFlow from './P2pDepositFlow';
 import { getAllSettings, getEffectiveMinDepositTon, getReferrerId, getUser } from '../services/supabaseClient';
 import {
   DEPOSIT_COUNTRIES,
@@ -20,9 +21,13 @@ interface CardDepositSheetProps {
   onError?: (message: string) => void;
   onSuccess?: (message: string) => void;
   telegramUserId?: number;
+  /** Открыть сразу П2П-поток (например, по кнопке «У вас открытая сделка») */
+  initialOpenP2P?: boolean;
+  onClearInitialP2P?: () => void;
 }
 
-type DepositMethod = 'rf' | 'crypto' | null;
+/** П2П = единственный способ пополнения по реквизитам; отдельного «по реквизитам» без П2П нет */
+type DepositMethod = 'p2p' | 'crypto' | null;
 type Step = 'method' | 'amount' | 'requisites' | 'screenshot' | 'crypto_confirm';
 
 const RUSSIA = DEPOSIT_COUNTRIES[0];
@@ -34,6 +39,8 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
   onError,
   onSuccess,
   telegramUserId,
+  initialOpenP2P,
+  onClearInitialP2P,
 }) => {
   const [step, setStep] = useState<Step>('method');
   const [depositMethod, setDepositMethod] = useState<DepositMethod>(null);
@@ -63,6 +70,14 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
     setScreenshotFile(null);
     setScreenshotPreview(null);
   }, [isOpen]);
+
+  // По кнопке «У вас открытая сделка» открыть сразу П2П и восстановить сделку из localStorage
+  useEffect(() => {
+    if (isOpen && initialOpenP2P) {
+      setDepositMethod('p2p');
+      onClearInitialP2P?.();
+    }
+  }, [isOpen, initialOpenP2P, onClearInitialP2P]);
 
   useEffect(() => {
     if (isOpen && (step === 'amount' || step === 'crypto_confirm')) {
@@ -245,6 +260,18 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
 
   if (!isOpen) return null;
 
+  if (depositMethod === 'p2p') {
+    return (
+      <P2pDepositFlow
+        isOpen={true}
+        onClose={() => { setDepositMethod(null); onClose(); }}
+        telegramUserId={telegramUserId ?? undefined}
+        onError={onError}
+        onSuccess={onSuccess}
+      />
+    );
+  }
+
   const titleByStep: Record<Step, string> = {
     method: 'Способ пополнения',
     amount: 'Сумма пополнения',
@@ -256,18 +283,17 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/55 backdrop-blur-md z-40 sheet-backdrop"
+        className="fixed inset-0 bg-black/55 backdrop-blur-md sheet-backdrop"
+        style={{ zIndex: 90 }}
         onClick={handleClose}
+        aria-hidden
       />
       <div
-        className="
-          fixed bottom-0 left-0 right-0 z-50
-          max-w-md mx-auto max-h-[90vh]
-          flex flex-col
-          rounded-t-3xl border border-white/10
-          bg-[#05060a]/95
-          sheet-panel
-        "
+        className="fixed bottom-0 left-0 right-0 max-w-md mx-auto max-h-[90vh] flex flex-col rounded-t-3xl border border-white/10 bg-[#05060a]/95 sheet-panel"
+        style={{ zIndex: 100 }}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
         <div className="flex-shrink-0 px-6 pt-3 pb-2">
           <div className="flex justify-center mb-3">
@@ -298,25 +324,48 @@ const CardDepositSheet: React.FC<CardDepositSheetProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto px-6">
+        <div className="flex-1 min-h-0 overflow-y-auto px-6" onClick={(e) => e.stopPropagation()}>
           {step === 'method' && (
             <div className="space-y-4">
-              <p className="text-white/70 text-sm">Выберите способ пополнения. Реквизиты и адрес крипты задаются в админ-панели бота и подтягиваются из базы.</p>
-              <button
-                type="button"
-                onClick={() => { setDepositMethod('rf'); setStep('amount'); setAmount(''); }}
-                className="w-full flex items-center gap-3 p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-left transition-colors"
+              <p className="text-white/70 text-sm">Выберите способ пополнения. П2П — единственный способ по реквизитам: вы открываете сделку, воркер выдаёт реквизиты, вы платите и загружаете скрин.</p>
+              <div
+                role="button"
+                tabIndex={0}
+                className="w-full flex items-center gap-3 p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-left transition-colors cursor-pointer select-none active:scale-[0.98] active:bg-white/10"
+                style={{ touchAction: 'manipulation' }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setDepositMethod('p2p');
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  setDepositMethod('p2p');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setDepositMethod('p2p');
+                  }
+                }}
               >
-                <CreditCard className="w-6 h-6 text-tg-button" />
+                <CreditCard className="w-6 h-6 text-tg-button flex-shrink-0 pointer-events-none" />
                 <div>
-                  <p className="font-medium text-white">По реквизитам РФ</p>
-                  <p className="text-xs text-white/50">Перевод на карту/счёт в рублях, затем скриншот чека</p>
+                  <p className="font-medium text-white">П2П (по реквизитам)</p>
+                  <p className="text-xs text-white/50">Сделка → реквизиты от продавца → оплата → скриншот</p>
                 </div>
-              </button>
+              </div>
               <button
                 type="button"
-                onClick={() => { setDepositMethod('crypto'); setStep('amount'); setAmount(''); }}
-                className="w-full flex items-center gap-3 p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-left transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setDepositMethod('crypto');
+                  setStep('amount');
+                  setAmount('');
+                }}
+                className="w-full flex items-center gap-3 p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-left transition-colors cursor-pointer select-none active:scale-[0.98]"
+                style={{ touchAction: 'manipulation' }}
               >
                 <Globe className="w-6 h-6 text-emerald-400" />
                 <div>

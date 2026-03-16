@@ -3,7 +3,7 @@ import { CreditCard, Globe, AlertTriangle } from 'lucide-react';
 import ButtonPair from './ButtonPair';
 import BottomSheet from './BottomSheet';
 import LoadingRow from './LoadingRow';
-import { getAllSettings, getEffectiveMinWithdrawTon } from '../services/supabaseClient';
+import { getAllSettings, getEffectiveMinWithdrawTon, logAction } from '../services/supabaseClient';
 import { getTonRates, tonToFiat, type CurrencyCode } from '../services/tonRates';
 
 interface WithdrawSheetProps {
@@ -94,6 +94,11 @@ const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ isOpen, onClose, balance,
         onError?.('Введите корректные реквизиты для получения');
         return;
       }
+      logAction('withdraw_request', {
+        userId: telegramUserId ?? undefined,
+        tgid: telegramUserId != null ? String(telegramUserId) : undefined,
+        payload: { amount: amountNum, method: 'bank_rf' },
+      });
       onSuccess?.('Заявка на вывод принята');
     } else {
       const addr = (cryptoAddress || '').trim();
@@ -101,6 +106,11 @@ const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ isOpen, onClose, balance,
         onError?.('Введите адрес кошелька (USDT в сети TON)');
         return;
       }
+      logAction('withdraw_request', {
+        userId: telegramUserId ?? undefined,
+        tgid: telegramUserId != null ? String(telegramUserId) : undefined,
+        payload: { amount: amountNum, method: 'crypto' },
+      });
       onSuccess?.('Заявка на вывод принята');
     }
     handleClose();

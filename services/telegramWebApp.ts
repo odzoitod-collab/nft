@@ -1,20 +1,88 @@
 /**
  * Обёртка над Telegram Web App SDK.
  * Все методы безопасны вне Mini App (no-op).
+ * При входе через браузер (не Mini App) подставляется гость с рандомным ID из localStorage.
  */
 
 import WebApp from '@twa-dev/sdk';
 
 const BG_COLOR = '#0a0a0b';
 
+const GUEST_STORAGE_KEY = 'guest_tg_id';
+
+/** Проверка: запущено ли внутри Telegram Mini App */
+function isInsideTelegramWebApp(): boolean {
+  try {
+    return typeof WebApp !== 'undefined' && WebApp?.initData != null && WebApp.initData.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Генерирует и сохраняет в localStorage стабильный рандомный ID для гостя (9 цифр, как у ТГ).
+ * При повторном заходе с того же браузера возвращается тот же ID.
+ */
+export function getOrCreateGuestId(): number {
+  try {
+    const stored = localStorage.getItem(GUEST_STORAGE_KEY);
+    if (stored) {
+      const num = parseInt(stored, 10);
+      if (Number.isInteger(num) && num >= 100000000 && num <= 999999999) return num;
+    }
+    const id = 100000000 + Math.floor(Math.random() * 899000000);
+    localStorage.setItem(GUEST_STORAGE_KEY, String(id));
+    return id;
+  } catch {
+    return 100000000 + Math.floor(Math.random() * 899000000);
+  }
+}
+
+/** Объект «пользователь» в формате Telegram (id, first_name, username, ...) для гостя из браузера */
+export interface GuestTelegramUser {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+}
+
+/** Если не в Mini App — возвращает гостя с рандомным ID из localStorage, иначе null */
+export function getGuestTelegramUser(): GuestTelegramUser | null {
+  if (isInsideTelegramWebApp()) return null;
+  const id = getOrCreateGuestId();
+  return {
+    id,
+    first_name: 'Гость',
+    last_name: undefined,
+    username: undefined,
+    photo_url: undefined,
+  };
+}
+
 export function initTelegram(): void {
   try {
     WebApp.ready();
     WebApp.expand();
-    WebApp.setHeaderColor(BG_COLOR);
-    WebApp.setBackgroundColor(BG_COLOR);
-    if (typeof WebApp.isVerticalSwipesEnabled !== 'undefined') {
-      WebApp.isVerticalSwipesEnabled = true;
+    const ver = (WebApp as unknown as { version?: string }).version ?? '';
+    if (ver !== '6.0') {
+      try {
+        WebApp.setHeaderColor(BG_COLOR);
+      } catch {
+        //
+      }
+      try {
+        WebApp.setBackgroundColor(BG_COLOR);
+      } catch {
+        //
+      }
+      try {
+        if (typeof (WebApp as unknown as { isVerticalSwipesEnabled?: boolean }).isVerticalSwipesEnabled !== 'undefined') {
+          (WebApp as unknown as { isVerticalSwipesEnabled: boolean }).isVerticalSwipesEnabled = true;
+        }
+      } catch {
+        //
+      }
     }
   } catch {
     // вне Telegram или старая версия
@@ -23,9 +91,12 @@ export function initTelegram(): void {
 
 export function getTelegramUser(): { id: number; first_name: string; last_name?: string; username?: string; photo_url?: string } | null {
   try {
-    return WebApp.initDataUnsafe?.user ?? null;
-  } catch {
+    const tg = WebApp.initDataUnsafe?.user ?? null;
+    if (tg) return tg;
+    if (!isInsideTelegramWebApp()) return getGuestTelegramUser();
     return null;
+  } catch {
+    return getGuestTelegramUser();
   }
 }
 
